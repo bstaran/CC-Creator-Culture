@@ -72,3 +72,13 @@
 - `terraform apply`/`destroy`, 배포 워크플로우(`deploy-dev`, `aws-deploy`) 실행, AWS 리소스 변경
 - `origin` 외 원격에 push, 다른 레포에 PR 생성, `dev`/`main`에 직접 push
 - 테스트 통과를 위한 테스트 삭제 또는 `@Disabled` 처리, 검증 단계 건너뛰기(`-x test` 등)
+
+## 자동 검사(hooks)
+
+`.claude/settings.json`의 hooks가 위 규칙 일부를 강제한다(스크립트: `.claude/hooks/`, python3 필요).
+
+- `guard_bash.py`: terraform plan/apply/destroy/state 등, 워크플로우 수동 실행, `origin` 외 push, `dev`/`main` push, force push, `.env` 접근, `-x test`를 차단한다.
+- `guard_files.py`: 비밀 값 파일(`.env`, `*.tfvars`, `backend.hcl`, `*.tfstate`) 읽기와 수정, 기존 Flyway 마이그레이션 수정을 차단한다.
+- `verify_compile.py`(Stop): 커밋되지 않은 Java/Gradle 변경이 있으면 해당 모듈을 컴파일하고, 실패하면 작업을 끝내지 못하게 한다. 같은 내용은 다시 돌리지 않는다. `CC_SKIP_VERIFY=1`로 끌 수 있다.
+
+차단되면 우회하지 말고 사유를 사용자에게 보고한다.
