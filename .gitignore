@@ -289,13 +289,13 @@ gradle-app.setting
 *.hprof
 
 # ai
-.claude/
+.claude/settings.local.json
 .agents/
 .codex/
 .grok/
 .cursor/
 AGENTS.md
-CLAUDE.md
+CLAUDE.local.md
 GEMINI.md
 
 work/
