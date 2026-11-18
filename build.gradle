@@ -3,6 +3,7 @@ import org.springframework.boot.gradle.plugin.SpringBootPlugin
 plugins {
     id 'org.springframework.boot' version '4.1.1' apply false
     id 'io.spring.dependency-management' version '1.1.7' apply false
+    id 'com.diffplug.spotless' version '7.2.1' apply false
 }
 
 group = 'com.sub9'
@@ -21,6 +22,22 @@ allprojects {
 subprojects {
     apply plugin: 'java'
     apply plugin: 'io.spring.dependency-management'
+    apply plugin: 'com.diffplug.spotless'
+
+    // 기본 포맷 규칙만 검사한다(들여쓰기, import 순서는 팀 스타일이 섞여 있어 강제하지 않음).
+    // ratchetFrom: origin/dev 대비 바뀐 파일만 검사하므로 기존 파일 전체를 한 번에 고치지 않는다.
+    // origin/dev 참조가 필요해서 build(check)에는 넣지 않고, 모듈 CI(ci-module.yml)와 Stop hook에서 spotlessCheck를 따로 실행한다.
+    // 고치기: ./gradlew spotlessApply
+    spotless {
+        enforceCheck false
+        ratchetFrom 'origin/dev'
+        java {
+            target 'src/*/java/**/*.java'
+            removeUnusedImports()
+            trimTrailingWhitespace()
+            endWithNewline()
+        }
+    }
 
     group = rootProject.group
     version = rootProject.version

@@ -26,8 +26,11 @@
 ./gradlew :apps:order-service:test --tests '*OrderCancellationServiceTest'    # 단일 테스트
 ./gradlew :apps:order-service:build                                           # CI와 같은 검증(컴파일 + 테스트)
 ./gradlew build                                                               # 전체 빌드 및 테스트
+./gradlew :apps:order-service:spotlessCheck                                   # 포맷 검사(origin/dev 대비 바뀐 파일만)
+./gradlew :apps:order-service:spotlessApply                                   # 포맷 자동 수정
 ```
 
+- 포맷은 기본 규칙(미사용 import 제거, 줄 끝 공백 제거, 파일 끝 개행)만 검사한다. 들여쓰기와 import 순서는 강제하지 않으므로, 파일을 고칠 때 그 파일의 기존 스타일을 따른다. `build`에는 포함되지 않고 모듈 CI가 따로 실행한다.
 - 모듈 경로는 `:apps:<서비스>`, `:infra:<모듈>`, `:libs:common`이다. 변경한 모듈을 검증하고, `libs/common`을 수정했다면 이에 의존하는 서비스도 모두 검증한다.
 - 테스트 로그가 길다(`show-sql`). 실행 결과는 종료 코드와 `<모듈>/build/reports/tests/test/index.html`로 확인한다.
 - 테스트 프로필과 DB 구성은 서비스마다 다르다(서비스별 `CLAUDE.md` 참고). Docker가 없으면 `product-service` 통합 테스트는 실패하고, `disabledWithoutDocker = true`가 붙은 테스트는 실패가 아니라 건너뛴다. 통합 테스트 통과를 근거로 삼을 때는 건너뛰지 않았는지 `build/test-results`에서 확인한다.
@@ -89,6 +92,6 @@
 
 - `guard_bash.py`: terraform plan/apply/destroy/state 등, 워크플로우 수동 실행, `origin` 외 push, `dev`/`main` push, force push, `.env` 접근, `-x test`를 차단한다.
 - `guard_files.py`: 비밀 값 파일(`.env`, `*.tfvars`, `backend.hcl`, `*.tfstate`) 읽기와 수정, 기존 Flyway 마이그레이션 수정을 차단한다.
-- `verify_compile.py`(Stop): 커밋되지 않은 Java/Gradle 변경이 있으면 해당 모듈을 컴파일하고, 실패하면 작업을 끝내지 못하게 한다. 같은 내용은 다시 돌리지 않는다. `CC_SKIP_VERIFY=1`로 끌 수 있다.
+- `verify_compile.py`(Stop): 커밋되지 않은 Java/Gradle 변경이 있으면 해당 모듈의 포맷 검사(`spotlessCheck`)와 컴파일을 실행하고, 실패하면 작업을 끝내지 못하게 한다. 같은 내용은 다시 돌리지 않는다. `CC_SKIP_VERIFY=1`로 끌 수 있다.
 
 차단되면 우회하지 말고 사유를 사용자에게 보고한다.

@@ -28,7 +28,8 @@ tools: Read, Grep, Glob, Edit, Write, Bash
 
 1. **기준 테스트**: `./gradlew :<모듈>:test --tests '<기준 테스트 패턴>'`
 2. **모듈 전체**: `./gradlew :<모듈>:build` *(`libs/common`을 수정했다면 의존하는 서비스 모두 실행)*
-3. **실패 상한**: 같은 방법으로 2회 실패하면 더 시도하지 말고 실패 내용과 추정 원인을 보고한다.
+3. **포맷**: `./gradlew :<모듈>:spotlessCheck` (실패하면 `spotlessApply`로 고친다)
+4. **실패 상한**: 같은 방법으로 2회 실패하면 더 시도하지 말고 실패 내용과 추정 원인을 보고한다.
 
 ## 보고 형식
 

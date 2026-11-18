@@ -109,7 +109,7 @@ def main() -> None:
     if not java_available():
         notice("JDK 21을 찾지 못해 컴파일 검증을 건너뛰었다. JAVA_HOME을 설정하면 다음부터 실행된다.")
 
-    tasks = [t for m in mods for t in (f"{m}:compileJava", f"{m}:compileTestJava")]
+    tasks = [t for m in mods for t in (f"{m}:spotlessCheck", f"{m}:compileJava", f"{m}:compileTestJava")]
     try:
         result = subprocess.run(
             ["./gradlew", *tasks, "-q", "--console=plain"],
@@ -123,10 +123,17 @@ def main() -> None:
             fh.write(fp)
         sys.exit(0)
 
-    tail = "\n".join((result.stdout + result.stderr).strip().splitlines()[-40:])
+    output = (result.stdout + result.stderr).strip()
+    tail = "\n".join(output.splitlines()[-40:])
+    if "spotlessJavaCheck" in output and "format violations" in output:
+        kind = "포맷 위반"
+        hint = "`./gradlew " + " ".join(f"{m}:spotlessApply" for m in mods) + "`로 고친 뒤 마무리한다."
+    else:
+        kind = "컴파일 실패"
+        hint = "고친 뒤 마무리한다."
     if payload.get("stop_hook_active"):
-        notice(f"컴파일 실패가 남아 있다({', '.join(mods)}). 사용자에게 상황을 보고할 것.\n{tail}")
-    print(f"[verify-compile] 컴파일 실패({', '.join(mods)}). 고친 뒤 마무리한다.\n{tail}", file=sys.stderr)
+        notice(f"{kind}가 남아 있다({', '.join(mods)}). 사용자에게 상황을 보고할 것.\n{tail}")
+    print(f"[verify-compile] {kind}({', '.join(mods)}). {hint}\n{tail}", file=sys.stderr)
     sys.exit(2)
 
 
