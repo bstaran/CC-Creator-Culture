@@ -321,7 +321,6 @@ terraform.rc
 .terraformrc
 
 # etc.
-docs/
 __pycache__/
 
 # End of https://www.toptal.com/developers/gitignore/api/visualstudiocode,intellij+all,eclipse,macos,windows,gradle,java
