@@ -25,7 +25,7 @@ tools: Read, Grep, Glob, Edit, Write, Bash
 
 기존 테스트 스타일을 따른다.
 
-- **도구 및 네이밍**: JUnit 5, AssertJ, Mockito(BDDMockito `given`/`then`)를 사용한다. `@DisplayName`은 한국어 문장으로 쓰고, 테스트 그룹은 `@Nested`로 구성한다.
+- **도구 및 네이밍**: JUnit 5, AssertJ, Mockito(BDDMockito `given`/`then`)를 사용한다. 테스트 메서드 이름은 영어 camelCase로 쓰고(예: `cancelOrderRestoresCoupon`), 한국어 설명은 `@DisplayName("...")`에 문장으로 쓴다. 테스트 그룹은 `@Nested`로 구성한다.
 - **기존 패턴 일치**: 같은 패키지의 기존 테스트를 먼저 읽고 구조와 픽스처 방식을 맞춘다.
 - **결정적 테스트**: 시간, 랜덤, UUID에 의존하는 값은 고정하거나 주입한다. `Thread.sleep`으로 타이밍을 맞추지 않는다.
 - **통합 테스트**:

@@ -42,7 +42,17 @@
 - `infrastructure`: 영속성(JPA, QueryDSL), 외부 클라이언트(Feign), Kafka, outbox, 스케줄링.
 - `presentation`: 컨트롤러, 요청/응답 DTO.
 
-알려진 위반: `application`이 `presentation` DTO(일부는 `infrastructure`)를 import하는 파일이 약 33개 있다. **새 위반을 만들지 않는다.** 기존 위반은 리팩토링 이슈로만 고친다.
+알려진 위반: `application`이 `presentation` DTO(일부는 `infrastructure`)에 의존하는 클래스가 34개 있다. **새 위반을 만들지 않는다.** 기존 위반은 리팩토링 이슈로만 고친다.
+
+- 각 서비스의 `architecture/LayerArchitectureTest`(ArchUnit)가 위 규칙을 검사한다. 기존 위반은 `src/test/resources/archunit_store`에 동결되어 있어 통과하고, 새 위반은 테스트 실패로 드러난다.
+- 동결 저장소에 위반을 직접 추가하거나 `allowStoreCreation`을 켜서 실패를 덮지 않는다. 기존 위반을 고치면 저장소에서 자동으로 빠지므로 그 변경은 함께 커밋한다.
+- 커버리지: 테스트 후 `<모듈>/build/reports/jacoco/test/`에 리포트가 생긴다. 요약은 `python3 scripts/ai/coverage-summary.py`.
+
+## 테스트 작성
+
+- 테스트 메서드 이름은 영어 camelCase로 쓰고, 한국어 설명은 `@DisplayName("한국어 문장")`으로 붙인다(예: `void cancelOrderRestoresCoupon()` + `@DisplayName("주문을 취소하면 쿠폰이 복구된다")`). 클래스와 `@Nested` 그룹도 같은 방식이다.
+- 기존 테스트의 한국어 메서드 이름은 그대로 두고, 새로 쓰거나 고치는 테스트부터 이 규칙을 따른다.
+- ArchUnit `@ArchTest`는 필드 대신 메서드로 쓴다(`@DisplayName`은 필드에 붙일 수 없다). ArchUnit 엔진은 리포트에 `@DisplayName`을 표시하지 않고 메서드 이름을 쓴다.
 
 ## 변경 시 주의
 
