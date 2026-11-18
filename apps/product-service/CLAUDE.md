@@ -35,5 +35,4 @@
 
 ## 알려진 구조 예외
 
-- `review` 컨트롤러 패키지 이름이 `review.presentaion`(오타)이다. 고치려면 별도 리팩토링 이슈로 분리한다.
 - `PATCH /api/v1/admin/products/{productId}/status`가 게이트웨이 라우트에 없다(세 환경 모두).

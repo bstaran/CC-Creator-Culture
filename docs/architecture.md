@@ -65,7 +65,6 @@ flowchart LR
 
 각 기능 패키지 아래에는 `domain`, `application`, `infrastructure`, `presentation` 디렉터리가 있다. 패키지 구성과 의존 방식의 특징은 아래와 같다.
 
-- `review` 컨트롤러의 패키지 이름은 `review.presentaion`이다.
 - `notification` 컨트롤러의 경로는 `notification/infrastructure/presentation`이다.
 - 상품 상세, 장바구니, 리뷰, 위시리스트 컨트롤러는 인바운드 포트에 의존한다.
 - 인증, 크리에이터, 팔로우, 사용자, 리더보드, 쿠폰, 주문, 결제 컨트롤러는 `@Service` 클래스를 직접 주입받는다.

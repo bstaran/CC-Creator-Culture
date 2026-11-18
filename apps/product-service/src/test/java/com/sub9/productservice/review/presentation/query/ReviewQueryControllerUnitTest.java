@@ -1,4 +1,4 @@
-package com.sub9.productservice.review.presentaion.query;
+package com.sub9.productservice.review.presentation.query;
 
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.eq;

@@ -1,4 +1,4 @@
-package com.sub9.productservice.review.presentaion.query.dto;
+package com.sub9.productservice.review.presentation.query.dto;
 
 import com.sub9.productservice.review.application.query.dto.ReviewInfo;
 import java.time.Instant;

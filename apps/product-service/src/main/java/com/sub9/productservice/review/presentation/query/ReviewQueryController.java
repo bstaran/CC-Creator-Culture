@@ -1,11 +1,11 @@
-package com.sub9.productservice.review.presentaion.query;
+package com.sub9.productservice.review.presentation.query;
 
 import com.sub9.common.annotation.Customer;
 import com.sub9.common.dto.response.ApiResponse;
 import com.sub9.common.dto.response.PageResponse;
 import com.sub9.productservice.common.security.AuthUser;
 import com.sub9.productservice.review.application.port.in.ReviewQueryUseCase;
-import com.sub9.productservice.review.presentaion.query.dto.ReviewResponse;
+import com.sub9.productservice.review.presentation.query.dto.ReviewResponse;
 import jakarta.validation.constraints.Min;
 import java.util.UUID;
 import lombok.RequiredArgsConstructor;

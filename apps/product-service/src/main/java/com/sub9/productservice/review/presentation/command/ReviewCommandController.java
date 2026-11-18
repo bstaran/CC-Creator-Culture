@@ -1,12 +1,12 @@
-package com.sub9.productservice.review.presentaion.command;
+package com.sub9.productservice.review.presentation.command;
 
 import com.sub9.common.annotation.Customer;
 import com.sub9.common.dto.response.ApiResponse;
 import com.sub9.productservice.common.security.AuthUser;
 import com.sub9.productservice.review.application.command.dto.DeleteReviewCommand;
 import com.sub9.productservice.review.application.port.in.ReviewCommandUseCase;
-import com.sub9.productservice.review.presentaion.command.dto.CreateReviewRequest;
-import com.sub9.productservice.review.presentaion.command.dto.UpdateReviewRequest;
+import com.sub9.productservice.review.presentation.command.dto.CreateReviewRequest;
+import com.sub9.productservice.review.presentation.command.dto.UpdateReviewRequest;
 import jakarta.validation.Valid;
 import java.util.UUID;
 import lombok.RequiredArgsConstructor;
