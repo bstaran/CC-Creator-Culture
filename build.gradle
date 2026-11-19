@@ -3,6 +3,7 @@ import org.springframework.boot.gradle.plugin.SpringBootPlugin
 plugins {
     id 'org.springframework.boot' version '4.1.1' apply false
     id 'io.spring.dependency-management' version '1.1.7' apply false
+    id 'com.diffplug.spotless' version '7.2.1' apply false
 }
 
 group = 'com.sub9'
@@ -21,6 +22,22 @@ allprojects {
 subprojects {
     apply plugin: 'java'
     apply plugin: 'io.spring.dependency-management'
+    apply plugin: 'com.diffplug.spotless'
+
+    // 기본 포맷 규칙만 검사한다(들여쓰기, import 순서는 팀 스타일이 섞여 있어 강제하지 않음).
+    // ratchetFrom: origin/dev 대비 바뀐 파일만 검사하므로 기존 파일 전체를 한 번에 고치지 않는다.
+    // origin/dev 참조가 필요해서 build(check)에는 넣지 않고, 모듈 CI(ci-module.yml)와 Stop hook에서 spotlessCheck를 따로 실행한다.
+    // 고치기: ./gradlew spotlessApply
+    spotless {
+        enforceCheck false
+        ratchetFrom 'origin/dev'
+        java {
+            target 'src/*/java/**/*.java'
+            removeUnusedImports()
+            trimTrailingWhitespace()
+            endWithNewline()
+        }
+    }
 
     group = rootProject.group
     version = rootProject.version
@@ -46,12 +63,29 @@ subprojects {
 
             if (project.path.startsWith(':apps:')) {
                 testRuntimeOnly 'com.h2database:h2'
+                // 계층 규칙 검사(LayerArchitectureTest). 기존 위반은 src/test/resources/archunit_store에 동결되어 있다
+                testImplementation 'com.tngtech.archunit:archunit-junit5:1.4.1'
             }
         }
     }
 
     tasks.withType(Test).configureEach {
         useJUnitPlatform()
+    }
+
+    // 커버리지 기준선 측정용. 테스트 후 build/reports/jacoco/test에 HTML, XML 리포트를 만든다(임계값 강제는 아직 하지 않음)
+    apply plugin: 'jacoco'
+    jacoco {
+        toolVersion = '0.8.13'
+    }
+    tasks.named('test') {
+        finalizedBy tasks.named('jacocoTestReport')
+    }
+    tasks.named('jacocoTestReport') {
+        reports {
+            xml.required = true
+            html.required = true
+        }
     }
 
     // Windows 기본 플랫폼 인코딩(MS949)으로 소스를 읽으면 한글 문자열 리터럴이 깨져서 컴파일됨 - 명시적으로 고정

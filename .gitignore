@@ -289,13 +289,13 @@ gradle-app.setting
 *.hprof
 
 # ai
-.claude/
+.claude/settings.local.json
 .agents/
 .codex/
 .grok/
 .cursor/
 AGENTS.md
-CLAUDE.md
+CLAUDE.local.md
 GEMINI.md
 
 work/
@@ -321,7 +321,6 @@ terraform.rc
 .terraformrc
 
 # etc.
-docs/
 __pycache__/
 
 # End of https://www.toptal.com/developers/gitignore/api/visualstudiocode,intellij+all,eclipse,macos,windows,gradle,java
