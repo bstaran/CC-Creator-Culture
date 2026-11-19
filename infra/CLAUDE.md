@@ -22,7 +22,8 @@
 | `terraform/aws/{bootstrap,persistent,runtime}` | AWS 서울 리전(ECS, RDS, ECR, OIDC 역할) | `aws-deploy.yml`이 plan/deploy/start/stop/destroy-runtime 수행(자세한 내용은 `terraform/aws/README.md` 참고) |
 | `terraform/{bootstrap,dev,shared}` | OCI 개발 환경, Cloudflare | `deploy-dev.yml`(OCI)와 연결 |
 
-- 로컬에서 할 수 있는 검증은 CI(`ci-aws.yml`)와 같다: `terraform fmt -check -recursive`, `terraform init -backend=false`, `terraform validate`, runtime 스택은 `terraform test`. 실행 버전은 Terraform 1.12.2 기준이다.
+- 로컬에서 할 수 있는 검증은 CI(`ci-aws.yml`)와 같다: `terraform fmt -check -recursive`, `terraform init -backend=false`, `terraform validate`, runtime 스택은 `terraform test`. 실행 버전은 Terraform 1.12.2 기준이다. `scripts/ai/tf-check.sh [스택 디렉터리]`가 이 단계를 한 번에 실행한다(terraform이 없으면 Docker 이미지 사용).
+- 인프라 변경 절차는 `/infra-change`(`docs/ai-system/playbooks/group-c.md`), 리뷰어는 `infra-reviewer`.
 - `terraform plan`(원격 state 필요), `apply`, `destroy`, `import`, `state` 명령은 실행하지 않는다. plan이 필요하면 PR에 변경 의도를 적고 사람이 CI에서 실행한다.
 - `backend.hcl`, `terraform.tfvars`, state 파일은 커밋하지 않는다. `*.example`만 고친다.
 - 기존 리소스가 교체(replace)되거나 삭제되는 변경(이름이나 식별자 변경, `for_each` 키 변경 등)은 PR 설명에 명시하고 `moved` 블록을 검토한다. `shared/main.tf`의 예약 공인 IP처럼 주석으로 "교체 금지"가 적힌 리소스는 건드리지 않는다.

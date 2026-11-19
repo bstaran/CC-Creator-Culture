@@ -291,6 +291,8 @@ gradle-app.setting
 # ai
 .claude/settings.local.json
 .claude/worktrees/
+.ai-cache/
+load-test/.perf-summary-*
 .agents/
 .codex/
 .grok/

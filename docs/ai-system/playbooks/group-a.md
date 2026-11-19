@@ -66,9 +66,10 @@ PR을 만들기 전에 이번 브랜치에서 AI가 쓰거나 고친 문서(`*.m
 
 ```bash
 git push -u origin <브랜치>
-gh pr create --repo <origin 저장소> --base dev --title "<type>(<scope>): <요약>" --body-file <본문 파일>
+gh pr create --repo <origin 저장소> --base dev --title "<type>(<scope>): <요약>" --body-file <본문 파일> --label "<이슈의 트랙 라벨>"
 ```
 
+- 라벨: 연결된 이슈의 트랙 라벨(`type: bug`, `type: refactor`, `type: feature`, `type: infra`, `type: perf`)을 그대로 붙인다. AI 작업 체계 자체를 바꾸는 PR은 `area: ai-system`.
 - 본문은 `.github/pull_request_template.md` 양식. "테스트 결과"에 실제 실행한 명령과 결과(통과 수, 건너뜀 수), 버그 수정이면 수정 전 실패 메시지를 적는다. "관련 이슈"에 `Closes #<번호>`.
 - 리뷰 회차별 결과(판정, 차단 지적과 조치)를 참고사항에 요약한다.
 - 머지는 하지 않는다. PR 링크를 보고하고 상태 파일을 "PR 열림"으로 갱신한다.

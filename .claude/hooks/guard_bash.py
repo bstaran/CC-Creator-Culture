@@ -122,6 +122,29 @@ def check_env_access(segment: str) -> None:
         block(f"`{m.group(0)}`(비밀 값 파일)에 접근하지 않는다. 예시는 `.env.example`을 본다.")
 
 
+CLOUD_READ_PREFIXES = ("describe", "get", "list", "ls", "show", "help")
+
+
+def is_image_push(argv: list[str]) -> bool:
+    sub = argv[1:3]
+    return (sub[:1] == ["push"] or sub in (["image", "push"], ["compose", "push"])
+            or ("buildx" in argv and "--push" in argv))
+
+
+def check_cloud_cli(argv: list[str]) -> None:
+    """클라우드 CLI는 조회만 허용한다(aws: describe-/get-/list-, oci: get/list). 쓰기는 사람이 CI에서 한다."""
+    positional = []   # 첫 옵션이 나오기 전까지의 단어(서비스, 리소스, 동작)
+    for a in argv[1:]:
+        if a.startswith("-"):
+            break
+        positional.append(a)
+    if argv[0] == "aws" and positional[:2] == ["sts", "get-caller-identity"]:
+        return
+    action = positional[1] if argv[0] == "aws" and len(positional) > 1 else (positional[-1] if positional else "")
+    if not action.startswith(CLOUD_READ_PREFIXES):
+        block(f"`{argv[0]} {' '.join(positional[:3])}`: 클라우드 리소스를 바꾸는 명령은 AI가 실행하지 않는다(조회만 허용). 적용은 사람이 CI에서 한다.")
+
+
 def check_segment(segment: str) -> None:
     argv = argv_of(segment)
     if not argv:
@@ -141,6 +164,10 @@ def check_segment(segment: str) -> None:
             check_git_push(rest)
         if sub in ("commit", "tag"):
             is_text = True
+    elif cmd in ("aws", "oci"):
+        check_cloud_cli(argv)
+    elif cmd == "docker" and is_image_push(argv):
+        block("이미지 push는 AI가 하지 않는다. 이미지는 CI가 빌드하고 게시한다.")
     elif "gradlew" in cmd:
         if re.search(r"(?:^|\s)(?:-x|--exclude-task)(?:=|\s+)\S*test\b", segment, re.IGNORECASE):
             block("테스트 단계를 건너뛰지 않는다(`-x test` 금지).")
