@@ -32,6 +32,17 @@ def current_branch() -> str:
         return ""
 
 
+def upstream_branch() -> str:
+    try:
+        ref = subprocess.run(
+            ["git", "rev-parse", "--abbrev-ref", "--symbolic-full-name", "@{u}"],
+            capture_output=True, text=True, timeout=5,
+        ).stdout.strip()
+    except Exception:
+        return ""
+    return ref.split("/", 1)[1] if "/" in ref else ""
+
+
 def strip_heredocs(cmd: str) -> str:
     pattern = re.compile(r"<<-?\s*(['\"]?)(\w+)\1[^\n]*\n.*?\n\s*\2\s*(?=\n|$)", re.DOTALL)
     return pattern.sub("<<HEREDOC", cmd)
@@ -92,6 +103,9 @@ def check_git_push(args: list[str]) -> None:
     if not refspecs:
         if branch in PROTECTED_BRANCHES:
             block(f"`{branch}` 브랜치에서 직접 push하지 않는다. 작업 브랜치를 만든다.")
+        upstream = upstream_branch()
+        if upstream in PROTECTED_BRANCHES:
+            block(f"현재 브랜치의 upstream이 `{upstream}`이라 인자 없는 push가 `{upstream}`로 갈 수 있다. `git push -u origin <브랜치>`로 명시한다.")
         return
     for ref in refspecs:
         target = ref.lstrip("+").split(":")[-1].removeprefix("refs/heads/")
