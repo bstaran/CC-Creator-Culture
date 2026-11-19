@@ -33,6 +33,3 @@
 - 이 서비스가 제공하는 내부 API: `/internal/v1/stocks`(재고 차감/복구, `order-service`가 호출), `/internal/v1/skus`(`order-service`가 SKU 조회에 호출).
 - 이미지는 S3 Presigned URL로 업로드하고 CloudFront 공개 URL로 응답한다. 테스트는 가짜 버킷 설정(`test-bucket`)을 쓴다.
 
-## 알려진 구조 예외
-
-- `PATCH /api/v1/admin/products/{productId}/status`가 게이트웨이 라우트에 없다(세 환경 모두).

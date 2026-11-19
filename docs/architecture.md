@@ -39,12 +39,11 @@ flowchart LR
 | 앱 | 경로 |
 |---|---|
 | `user-service` | `/api/v1/users`, `/api/v1/auth`, `/api/v1/creators`, `/api/v1/follows`, `/api/v1/admin/managers`, `/api/v1/admin/creators`, `/api/v1/notifications` |
-| `product-service` | `/api/v1/products`, `/api/v1/categories`, `/api/v1/hashtags`, `/api/v1/leaderboards`, `/api/v1/admin/categories`, `/api/v1/admin/hashtags`, `/api/v1/wishlist`, `/api/v1/skus`, `/api/v1/admin/leaderboards`, `/api/v1/reviews`, `/api/v1/images` |
+| `product-service` | `/api/v1/products`, `/api/v1/categories`, `/api/v1/hashtags`, `/api/v1/leaderboards`, `/api/v1/admin/categories`, `/api/v1/admin/hashtags`, `/api/v1/admin/products`, `/api/v1/wishlist`, `/api/v1/skus`, `/api/v1/admin/leaderboards`, `/api/v1/reviews`, `/api/v1/images` |
 | `order-service` | `/api/v1/orders`, `/api/v1/creator/order-items`, `/api/v1/admin/orders`, `/api/v1/cart`, `/api/v1/coupons`, `/api/v1/user-coupons` |
 
 - 앱 사이의 호출은 Feign이나 Kafka로 이루어지며, 게이트웨이 라우트 표에 `/internal/v1`은 없다.
-- `/api/v1/images`는 `gateway-local.yaml`에서 `user-service`로, `gateway-dev.yaml`과 `gateway-prod.yaml`에서는 `product-service`로 보낸다. 이 컴포즈 스택의 프로필은 `dev`이므로 이미지 업로드는 `product-service`로 간다.
-- `ProductAdminCommandController`에 `PATCH /api/v1/admin/products/{productId}/status`가 있으나, `gateway-local.yaml`, `gateway-dev.yaml`, `gateway-prod.yaml` 모두에 이 경로가 없다(`/api/v1/products/**`는 `/api/v1/admin/products/**`와 일치하지 않는다).
+- 세 환경(`gateway-local.yaml`, `gateway-dev.yaml`, `gateway-prod.yaml`)의 라우트는 같은 경로 목록을 쓴다. `infra/gateway`의 `GatewayRouteConfigTest`가 주요 경로의 라우팅 대상을 세 환경에 대해 검사한다.
 
 ## 게이트웨이 인증
 

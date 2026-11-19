@@ -7,7 +7,7 @@
 - Spring Cloud Gateway(WebFlux) 기반이며, MVC 기반인 `libs/common`에 의존하지 않는다. 공통 코드를 끌어오지 말고 필요한 값은 게이트웨이 안에 둔다.
 - `GatewayAuthenticationFilter` 순서: 클라이언트가 보낸 `X-User-Id`, `X-User-Role`, `X-Token-Id`, `X-Token-Expires-At` 제거 → Bearer 액세스 토큰 검사(HS256, `type: ACCESS`) → Redis `auth:blacklist:access:{jti}` 확인(있으면 401, Redis 실패 시 503) → 네 헤더 기록. 헤더 제거 단계를 빼거나 순서를 바꾸면 헤더 위조가 가능해진다.
 - 블랙리스트 키 접두어와 JWT 형식은 `user-service`와 같아야 한다. 한쪽만 바꾸지 않는다.
-- 라우트는 코드가 아니라 `config-repo/gateway-{local,dev,prod}.yaml`에 있다. 세 파일을 함께 바꾸고, `/internal/**`는 라우트에 넣지 않는다. 알려진 차이: `/api/v1/images`(local은 `user-service`, dev와 prod는 `product-service`), `PATCH /api/v1/admin/products/{productId}/status` 라우트 누락.
+- 라우트는 코드가 아니라 `config-repo/gateway-{local,dev,prod}.yaml`에 있다. 세 파일을 함께 바꾸고, `/internal/**`는 라우트에 넣지 않는다. 라우트를 바꾸면 `route/GatewayRouteConfigTest`에 해당 경로 케이스를 추가한다.
 - 테스트: `./gradlew :infra:gateway:test`. 인증 필터, 헤더 정리, 공개 경로 매처 단위 테스트가 있다. 인증 로직을 바꾸면 해당 테스트를 함께 고친다.
 
 ## config-server, eureka-server
