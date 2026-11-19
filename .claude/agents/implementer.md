@@ -33,6 +33,9 @@ tools: Read, Grep, Glob, Edit, Write, Bash
 
 ## 보고 형식
 
+- 검증 수치(테스트 수, 실패, 건너뜀)는 `build/test-results`에서 읽어 클래스별로 적는다. 기준 테스트는 이름과 통과 수를 따로 적는다. BUILD SUCCESSFUL만으로 통과를 주장하지 않는다.
+- 마지막 응답에 아래 형식을 빠짐없이 채운다.
+
 ```markdown
 ## 변경 요약
 - `경로`: 무엇을 왜 바꿨는지 한 줄
