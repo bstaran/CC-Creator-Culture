@@ -28,7 +28,7 @@ git worktree add --no-track .claude/worktrees/<이슈번호> -b <refactor|fix>/<
 
 | 트랙 | 기준 | 확인 |
 |---|---|---|
-| 리팩토링 | 변경 대상 동작을 덮는 테스트. 기존 테스트로 부족하면 `test-writer`가 특성 테스트를 쓴다(`/characterize` 절차) | 현재 코드에서 **통과** |
+| 리팩토링 | 변경 대상 동작을 검증하는 테스트. 기존 테스트로 부족하면 `test-writer`가 특성 테스트를 쓴다(`/characterize` 절차) | 현재 코드에서 **통과** |
 | 버그 수정 | `test-writer`가 쓰는 재현 테스트 | 현재 코드에서 **버그 때문에 실패**(실패 메시지를 상태 파일에 기록) |
 
 기준이 고정되면 테스트만 먼저 커밋한다: `test(<scope>): <이슈번호> 특성 테스트` 또는 `test(<scope>): <이슈번호> 재현 테스트`.
@@ -36,42 +36,45 @@ git worktree add --no-track .claude/worktrees/<이슈번호> -b <refactor|fix>/<
 
 ## 4. 구현
 
-`implementer`에게 다음을 넘긴다: worktree 경로, 이슈 요약, 기준 테스트 이름, 대상 모듈, 범위 밖으로 하지 말아야 할 것.
+`implementer`에게 다음을 넘긴다: worktree 경로, 이슈 요약, 기준 테스트 이름, 대상 모듈, 작업 범위에서 제외할 사항.
 
 ## 5. 검증(오케스트레이터가 직접 실행)
 
-서브에이전트의 보고는 참고 자료다. 통과 여부와 수치는 **오케스트레이터가 직접 실행한 결과**로만 판단하고 상태 파일에 적는다. 보고가 비었거나 근거(수치, 파일)가 없으면 그 사실을 상태 파일 "시스템 검증에서 발견한 점"에 남긴다. 기준 테스트를 커밋하기 전에는 오케스트레이터가 같은 방식으로 직접 실행해 기대한 실패/통과를 확인한다.
+서브에이전트의 보고는 참고 자료다. 통과 여부와 수치는 **오케스트레이터가 직접 실행한 결과**로만 판단하고 상태 파일에 적는다. 보고가 비었거나 근거(수치, 파일)가 없으면 그 사실을 상태 파일의 "시스템 검증에서 발견한 점"에 남긴다. 기준 테스트를 커밋하기 전에는 오케스트레이터가 같은 방식으로 직접 실행해 기대한 대로 실패하거나 통과하는지 확인한다.
 
 ```bash
 ./gradlew :<모듈>:build             # 컴파일, 전체 테스트, ArchUnit
 ./gradlew :<모듈>:spotlessCheck
 ```
 
-- `libs/common`을 바꿨다면 의존하는 서비스 모두.
+- `libs/common`을 바꿨다면 의존하는 서비스도 모두 검증한다.
 - 리팩토링: 기준 테스트와 기존 테스트가 모두 통과해야 한다. 테스트 수와 건너뜀 수가 줄지 않았는지 확인한다.
 - 버그 수정: 3단계에서 실패하던 재현 테스트가 통과하고, 기존 테스트가 모두 통과해야 한다.
 - ArchUnit 동결 저장소(`archunit_store`)가 바뀌었다면 위반이 **줄어든** 경우만 허용하고 함께 커밋한다.
-- 실패하면 `implementer`에게 실패 내용을 넘겨 다시 맡긴다. 같은 원인으로 2회 실패하면 한 단계 강한 모델로 넘기고(`implementer`를 `model: opus`로 호출), 그래도 실패하면 멈추고 보고한다.
+- 실패하면 `implementer`에게 실패 내용을 넘겨 다시 맡긴다. 같은 원인으로 2회 실패하면 한 단계 강한 모델로 전환하고(`implementer`를 `model: opus`로 호출), 그래도 실패하면 멈추고 보고한다.
 
 ## 6. 리뷰
 
-- 항상 `arch-reviewer`. Kafka 이벤트, outbox, 이벤트 소비자, Redis Lua, `/internal` API가 diff에 걸리면 `event-reviewer`도 함께(병렬).
+- 항상 `arch-reviewer`를 호출한다. Kafka 이벤트, outbox, 이벤트 소비자, Redis Lua, `/internal` API가 diff에 포함되면 `event-reviewer`도 병렬로 호출한다.
 - 리뷰어에게 넘기는 것: 트랙과 기준(이슈 번호, 기준 테스트 이름), `git diff origin/dev...HEAD` 전체, worktree 경로.
-- "차단" 지적이 있으면 4단계로 돌아간다. **수정 요청은 최대 2회**. 3회째에도 차단이 남으면 멈추고 사람에게 보고한다.
+- "차단" 지적이 있으면 4단계로 돌아간다. **수정 요청은 최대 2회다**. 3회째에도 차단이 남으면 멈추고 사람에게 보고한다.
 - "권고"는 반영 여부를 오케스트레이터가 판단하고, 반영하지 않은 권고는 PR 본문 참고사항에 적는다.
 
 ## 7. PR
 
+PR을 만들기 전에 이번 브랜치에서 AI가 쓰거나 고친 문서(`*.md`, 상태 파일 포함)와 PR 본문 파일에 `/doc-review`를 실행해 문장을 다듬는다. 제안을 반영했으면 `--mark`로 기록하고 커밋한다. `agy`를 쓸 수 없으면 "건너뜀"으로 기록된다. 이 사실을 PR 참고사항에 적는다. 교정 기록이 없는 문서가 있으면 hook이 `gh pr create`를 막는다. PR 본문은 반드시 `--body-file`로 넘긴다.
+
 ```bash
 git push -u origin <브랜치>
-gh pr create --repo <origin 저장소> --base dev --title "<type>(<scope>): <요약>" --body-file <본문 파일>
+gh pr create --repo <origin 저장소> --base dev --title "<type>(<scope>): <요약>" --body-file <본문 파일> --label "<이슈의 트랙 라벨>"
 ```
 
-- 본문은 `.github/pull_request_template.md` 양식. "테스트 결과"에 실제 실행한 명령과 결과(통과 수, 건너뜀 수), 버그 수정이면 수정 전 실패 메시지를 적는다. "관련 이슈"에 `Closes #<번호>`.
+- 라벨: 연결된 이슈의 트랙 라벨(`type: bug`, `type: refactor`, `type: feature`, `type: infra`, `type: perf`)을 그대로 붙인다. AI 작업 체계 자체를 바꾸는 PR에는 `area: ai-system`을 붙인다.
+- 본문은 `.github/pull_request_template.md` 양식을 따른다. "테스트 결과"에는 실제 실행한 명령과 결과(통과 수, 건너뜀 수)를 적고, 버그 수정이면 수정 전 실패 메시지도 함께 적는다. "관련 이슈"에는 `Closes #<번호>`를 적는다.
 - 리뷰 회차별 결과(판정, 차단 지적과 조치)를 참고사항에 요약한다.
 - 머지는 하지 않는다. PR 링크를 보고하고 상태 파일을 "PR 열림"으로 갱신한다.
 
 ## 8. 정리
 
-- PR이 머지되거나 닫히면 `git worktree remove .claude/worktrees/<이슈번호>`.
+- PR 상태를 먼저 확인하고(`gh pr view <번호> --repo <origin 저장소> --json state`), `MERGED`나 `CLOSED`일 때만 `git worktree remove .claude/worktrees/<이슈번호>`를 실행한다. 사람의 "머지했다"는 말만으로 정리하지 않는다.
 - 리뷰에서 반복된 지적은 `docs/ai-system/metrics.md`의 피드백 기록에 남기고, 2회 이상 반복되면 `CLAUDE.md`나 에이전트 지침 보강을 제안한다.

@@ -1,0 +1,8 @@
+{
+  "eventId" : "string",
+  "productViewCounts" : [ {
+    "productId" : "string",
+    "viewCount" : "integer"
+  } ],
+  "viewDate" : "string"
+}

@@ -1,0 +1,7 @@
+{
+  "content" : "string",
+  "creatorId" : "string",
+  "hashTags" : [ "string" ],
+  "name" : "string",
+  "productId" : "string"
+}
