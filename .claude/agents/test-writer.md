@@ -26,7 +26,7 @@ tools: Read, Grep, Glob, Edit, Write, Bash
 기존 테스트 스타일을 따른다.
 
 - **도구 및 네이밍**: JUnit 5, AssertJ, Mockito(BDDMockito `given`/`then`)를 사용한다. 테스트 메서드 이름은 영어 camelCase로 쓰고(예: `cancelOrderRestoresCoupon`), 한국어 설명은 `@DisplayName("...")`에 문장으로 쓴다. 테스트 그룹은 `@Nested`로 구성한다.
-- **기존 패턴 일치**: 같은 패키지의 기존 테스트를 먼저 읽고 구조와 픽스처 방식을 맞춘다.
+- **기존 패턴 일치**: 같은 패키지의 기존 테스트를 먼저 읽고 구조와 픽스처 방식을 맞춘다. 들여쓰기(2칸/4칸)와 import 순서는 **같은 모듈의 기존 테스트 파일**을 따른다(모듈마다 다르다).
 - **결정적 테스트**: 시간, 랜덤, UUID에 의존하는 값은 고정하거나 주입한다. `Thread.sleep`으로 타이밍을 맞추지 않는다.
 - **통합 테스트**:
   - `product-service`와 `order-service`의 일부 통합 테스트는 `support/AbstractIntegrationTest`를 상속한다(Testcontainers).
@@ -40,6 +40,9 @@ tools: Read, Grep, Glob, Edit, Write, Bash
 ```
 
 ## 보고 형식
+
+- 반드시 직접 테스트를 실행하고, 결과 수치는 `<모듈>/build/test-results/test/TEST-<클래스>.xml`에서 읽어 적는다(BUILD SUCCESSFUL/FAILED만으로 보고하지 않는다). 실행하지 못했다면 그 사실과 이유를 적는다.
+- 마지막 응답에 아래 형식을 빠짐없이 채운다. 빈 보고나 자리표시자로 끝내지 않는다.
 
 ```markdown
 ## 작성한 테스트
