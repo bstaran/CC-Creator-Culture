@@ -21,23 +21,23 @@ argument-hint: "#<이슈번호> | <시나리오 경로> [--runs 3] [--tolerance 
 
 ## 2. 기준선
 
-- 기준선 커밋의 코드로 스택을 띄운다(worktree를 쓰면 그 worktree에서 `stack-up.sh`).
+- 기준선 커밋의 코드로 스택을 띄운다(worktree를 쓰면 그 worktree에서 `stack-up.sh`를 실행한다).
 - `python3 scripts/ai/perf-compare.py baseline <시나리오> --runs <N>`
 - 같은 기준선이 이미 있으면(`perf-compare.py show`) 커밋과 측정 시각을 확인하고 재사용 여부를 정한다.
 
 ## 3. 변경과 비교
 
-- 성능 개선 작업이면 변경은 그룹 A 절차(기존 테스트 통과, 범위 최소, arch-reviewer)를 함께 따른다.
+- 성능 개선 작업이면 변경할 때 그룹 A 절차(기존 테스트 통과, 범위 최소, arch-reviewer)를 함께 따른다.
 - 변경 후 코드로 스택을 다시 띄우고(`stack-up.sh`, 이미지 재빌드) 비교한다.
   ```bash
   python3 scripts/ai/perf-compare.py compare <시나리오> --runs <N> --tolerance <T>
   ```
-- 측정이 끝나면 `scripts/ai/stack-down.sh`.
+- 측정이 끝나면 `scripts/ai/stack-down.sh`를 실행한다.
 
 ## 4. 보고
 
 - `perf-compare.py`가 출력한 표(중앙값, 개별 실행 p95)를 그대로 붙인다.
-- 개별 실행 값의 편차가 크면(예: 최대/최소가 20% 이상 차이) 판정을 신뢰하기 어렵다고 적고 반복 횟수를 늘려 다시 잰다.
+- 개별 실행 값의 편차가 크면(예: 최대/최소 차이 20% 이상) 판정을 신뢰하기 어렵다고 적고 반복 횟수를 늘려 다시 잰다.
 - 개선 작업이면 원인 근거(쿼리 수, 로그, Grafana 지표)를 함께 적는다.
 - 상태 파일과 PR 본문(라벨 `type: perf`)에 결과를 남긴다.
 

@@ -1,7 +1,7 @@
 # 그룹 C 파이프라인(인프라/배포, 성능)
 
-`/infra-change`와 `/perf-check`가 따르는 절차다. 그룹 C는 기준이 분명하지만 **실행 환경에서만 확인할 수 있고, 실행하면 외부에 영향이 생긴다.** 그래서 AI는 변경 초안, 로컬 검증, 측정까지만 하고, plan 확인과 적용은 사람이 CI에서 한다.
-worktree, 상태 파일, 리뷰 횟수, PR 규칙은 [group-a.md](group-a.md)를 따르고, 아래는 다른 부분만 적는다.
+`/infra-change`와 `/perf-check`가 따르는 절차다. 그룹 C는 기준이 분명하지만 **실행 환경에서만 확인할 수 있고, 실행하면 외부에 영향이 생긴다.** 그래서 AI는 변경 초안 작성, 로컬 검증, 측정까지만 하고, plan 확인과 적용은 사람이 CI에서 한다.
+worktree, 상태 파일, 리뷰 횟수, PR 규칙은 [group-a.md](group-a.md)를 따르고, 아래에는 다른 부분만 적는다.
 
 ## AI가 하는 일과 하지 않는 일
 
@@ -16,7 +16,7 @@ worktree, 상태 파일, 리뷰 횟수, PR 규칙은 [group-a.md](group-a.md)를
 ## 인프라/배포(`/infra-change`)
 
 ### 기준
-- **변경 의도와 예상 plan 요약**: 어떤 리소스가 create/update/replace/destroy될지(리소스 주소 단위). replace와 destroy는 이유와 대책을 함께 적는다.
+- **변경 의도와 예상 plan 요약**: 어떤 리소스가 create/update/replace/destroy될지 리소스 주소 단위로 정리한다. replace와 destroy는 이유와 대책을 함께 적는다.
 - 기준은 PR 본문에 적고, 사람이 CI에서 plan을 돌려 이 요약과 대조한다.
 
 ### 검증(오케스트레이터가 직접)
@@ -25,16 +25,16 @@ scripts/ai/tf-check.sh                    # 바뀐 스택(fmt, init -backend=fal
 python3 .github/scripts/<바뀐 스크립트>_test.py   # 또는 bash ..._test.sh
 docker run --rm -v "$PWD":/repo -w /repo rhysd/actionlint:1.7.7 -color   # 워크플로우를 바꾼 경우
 ```
-- terraform도 Docker도 없으면 `tf-check.sh`는 건너뛰고(종료 코드 3), PR에서 CI(`ci-aws.yml`) 결과를 확인한다.
+- Terraform도 Docker도 없으면 `tf-check.sh`는 건너뛰고(종료 코드 3), PR에서 CI(`ci-aws.yml`) 결과를 확인한다.
 
 ### 리뷰
-- `infra-reviewer`(필수). 보안 관련 변경(권한, 네트워크, 비밀 값)은 `/security-review`도 실행한다.
+- `infra-reviewer`는 필수다. 보안 관련 변경(권한, 네트워크, 비밀 값)은 `/security-review`도 실행한다.
 - infra-reviewer가 정리한 "사람이 plan에서 꼭 확인할 항목"을 PR 본문에 옮긴다.
 
 ### PR 이후(사람)
-1. CI에서 plan 실행(`aws-deploy.yml`의 plan 등) → 결과를 PR 코멘트로 남김
-2. AI가 요청받으면 plan 결과와 예상 요약을 대조해 차이를 보고(`/infra-change #번호 plan-check`)
-3. 머지 후 적용과 배포는 사람이 environment 승인을 거쳐 실행
+1. CI에서 plan을 실행하고(`aws-deploy.yml`의 plan 등) 결과를 PR 코멘트로 남긴다.
+2. AI가 요청을 받으면 plan 결과와 예상 요약을 대조해 차이를 보고한다(`/infra-change #번호 plan-check`).
+3. 머지 후 적용과 배포는 사람이 environment 승인을 거쳐 실행한다.
 
 ## 성능(`/perf-check`)
 
@@ -51,7 +51,7 @@ scripts/ai/stack-down.sh
 ```
 - 기준선 측정과 비교는 **같은 PC, 같은 스택 구성**에서 진행한다. 기준선은 `.ai-cache/perf/`에 저장되지만 커밋하지는 않는다.
 - 측정 결과 표를 상태 파일과 PR 본문에 그대로 붙인다.
-- 개선 작업이라면 원인 분석 근거(쿼리 수, 로그, 지표)를 함께 남긴다. 코드 변경은 그룹 A 절차(기존 테스트 통과, arch-reviewer)를 함께 따른다.
+- 개선 작업이라면 원인 분석 근거(쿼리 수, 로그, 지표)를 함께 남긴다. 코드를 변경할 때는 그룹 A 절차(기존 테스트 통과, arch-reviewer)도 따른다.
 
 ### 리뷰
-- 코드 변경이 있으면 `arch-reviewer`, 이벤트/Redis가 관련되면 `event-reviewer`. 측정 방법(시나리오, 반복, 환경)이 공정한지도 리뷰 요청에 포함한다.
+- 코드 변경이 있으면 `arch-reviewer`, 이벤트/Redis와 관련이 있으면 `event-reviewer`에게 리뷰를 요청한다. 측정 방법(시나리오, 반복, 환경)이 공정한지도 리뷰 요청에 포함한다.
