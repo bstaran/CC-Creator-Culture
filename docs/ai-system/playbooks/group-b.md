@@ -55,12 +55,12 @@ scripts/ai/stack-up.sh && scripts/ai/smoke-gateway.sh; scripts/ai/stack-down.sh 
 
 ## 5. 리뷰
 
-- 항상 `arch-reviewer`와 `schema-reviewer`(병렬). 이벤트, outbox, Lua, `/internal`이 걸리면 `event-reviewer`도.
+- 항상 `arch-reviewer`와 `schema-reviewer`에게 병렬로 리뷰를 맡긴다. 이벤트, outbox, Lua, `/internal`이 걸리면 `event-reviewer`도 포함한다.
 - 리뷰어에게 스펙(이슈 본문)을 함께 넘긴다.
-- 수정 요청 최대 2회, 그 뒤에는 멈추고 보고한다(그룹 A와 같다).
+- 수정 요청은 최대 2회까지이며, 그 뒤에는 멈추고 보고한다(그룹 A와 같다).
 
 ## 6. PR
 
-- 제목 `feat(<scope>): <요약>`, 본문에 AC 대응표(AC, 테스트, 결과)를 넣는다.
+- 제목은 `feat(<scope>): <요약>`으로 하고, 본문에 AC 대응표(AC, 테스트, 결과)를 넣는다.
 - PR 전에 `/doc-review`로 PR 본문과 바뀐 문서를 다듬는다.
 - 배포 시 확인사항(마이그레이션 순서, 이벤트 생산자/소비자 배포 순서)을 반드시 채운다.

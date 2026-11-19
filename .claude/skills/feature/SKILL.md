@@ -32,10 +32,10 @@ argument-hint: "#<이슈번호>"
 
 - 구현은 서비스별로 나눠 `implementer`에게 맡긴다(생산자 → 소비자 순서).
 - 검증은 group-b.md 4장(스냅샷, 라우트, 필요 시 스택 스모크)까지 오케스트레이터가 직접 실행한다.
-- 리뷰는 `arch-reviewer`와 `schema-reviewer`를 병렬로, 이벤트/outbox/Lua/`/internal`이 걸리면 `event-reviewer`도. 스펙(이슈 본문)을 함께 넘긴다.
+- 리뷰는 `arch-reviewer`와 `schema-reviewer`를 병렬로 실행하고, 이벤트/outbox/Lua/`/internal`이 관련되면 `event-reviewer`도 함께 실행한다. 스펙(이슈 본문)을 함께 넘긴다.
 
 ## PR
 
 - 제목 `feat(<scope>): <요약>`. 본문에 AC 대응표, 배포 순서(마이그레이션, 이벤트 생산자/소비자), 반영하지 않은 권고를 적는다.
-- PR 전에 `/doc-review`로 PR 본문과 바뀐 문서를 다듬는다.
+- PR을 열기 전에 `/doc-review`로 PR 본문과 바뀐 문서를 다듬는다.
 - 머지하지 않는다. PR 링크를 보고하고 상태 파일을 갱신한다.

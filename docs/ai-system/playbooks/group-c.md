@@ -16,7 +16,7 @@ worktree, 상태 파일, 리뷰 횟수, PR 규칙은 [group-a.md](group-a.md)를
 ## 인프라/배포(`/infra-change`)
 
 ### 기준
-- **변경 의도와 예상 plan 요약**: 어떤 리소스가 create/update/replace/destroy 될지(리소스 주소 단위). replace와 destroy는 이유와 대책을 함께 적는다.
+- **변경 의도와 예상 plan 요약**: 어떤 리소스가 create/update/replace/destroy될지(리소스 주소 단위). replace와 destroy는 이유와 대책을 함께 적는다.
 - 기준은 PR 본문에 적고, 사람이 CI에서 plan을 돌려 이 요약과 대조한다.
 
 ### 검증(오케스트레이터가 직접)
@@ -49,9 +49,9 @@ python3 scripts/ai/perf-compare.py baseline <시나리오>   # 변경 전 코드
 python3 scripts/ai/perf-compare.py compare  <시나리오>   # 변경 후 코드에서(기본 3회 중앙값, p95 +10%, 실패율 +1%p)
 scripts/ai/stack-down.sh
 ```
-- 기준선과 비교는 **같은 PC, 같은 스택 구성**에서 잰다. 기준선은 `.ai-cache/perf/`에 저장되고 커밋하지 않는다.
+- 기준선 측정과 비교는 **같은 PC, 같은 스택 구성**에서 진행한다. 기준선은 `.ai-cache/perf/`에 저장되지만 커밋하지는 않는다.
 - 측정 결과 표를 상태 파일과 PR 본문에 그대로 붙인다.
 - 개선 작업이라면 원인 분석 근거(쿼리 수, 로그, 지표)를 함께 남긴다. 코드 변경은 그룹 A 절차(기존 테스트 통과, arch-reviewer)를 함께 따른다.
 
 ### 리뷰
-- 코드 변경이 있으면 `arch-reviewer`, 이벤트/Redis가 걸리면 `event-reviewer`. 측정 방법(시나리오, 반복, 환경)이 공정한지도 리뷰 요청에 포함한다.
+- 코드 변경이 있으면 `arch-reviewer`, 이벤트/Redis가 관련되면 `event-reviewer`. 측정 방법(시나리오, 반복, 환경)이 공정한지도 리뷰 요청에 포함한다.

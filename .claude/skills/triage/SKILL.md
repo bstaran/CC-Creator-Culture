@@ -63,7 +63,7 @@ gh issue list --repo <repo> --state open --search "<핵심 키워드>" --limit 2
 
 | 트랙 | 먼저 고정할 기준 |
 |---|---|
-| 리팩토링 | 대상 동작을 덮는 특성 테스트(현재 코드에서 통과) |
+| 리팩토링 | 대상 동작을 포괄하는 특성 테스트(현재 코드에서 통과) |
 | 버그 수정 | 실패하는 재현 테스트(현재 코드에서 버그 때문에 실패) |
 | 기능 개발 | 승인된 스펙(완료 조건), 요구사항 테스트, API/이벤트 스키마 |
 | 조사/문서 | 답할 질문의 범위 |
@@ -100,7 +100,7 @@ gh issue list --repo <repo> --state open --search "<핵심 키워드>" --limit 2
 
 ## 7. 다음 단계 진행
 
-보고한 뒤 사용자가 다음 진행 방식을 선택하도록 한다. **사용자 승인 없이 이슈, 라벨, 브랜치, 코드 변경을 만들지 않는다.**
+보고한 뒤 사용자가 다음 진행 방식을 선택하도록 한다. **사용자 승인 없이 이슈, 라벨, 브랜치를 만들거나 코드를 변경하지 않는다.**
 
 ### ① 이슈로 등록
 - 제목: `<type>(<scope>): <요약>`
@@ -124,4 +124,8 @@ gh issue create --repo <repo> --title "fix(order): ..." --label "type: bug" --la
 
 ---
 
-트랙 전용 스킬로 넘긴다. 이슈가 등록된 리팩토링은 `/refactor-task #번호`, 버그 수정은 `/bugfix #번호`(절차: `docs/ai-system/playbooks/group-a.md`). 기능 개발은 `/spec`(스펙 초안, 사람 승인 요청) 후 `spec: approved`가 붙으면 `/feature #번호`(절차: `docs/ai-system/playbooks/group-b.md`). 인프라/배포는 `/infra-change #번호`, 성능은 `/perf-check #번호`(절차: `docs/ai-system/playbooks/group-c.md`). 문서와 PR 본문은 `/doc-review`로 다듬는다.
+트랙 전용 스킬로 넘긴다.
+- 이슈가 등록된 리팩토링은 `/refactor-task #번호`, 버그 수정은 `/bugfix #번호`로 진행한다(절차: `docs/ai-system/playbooks/group-a.md`).
+- 기능 개발은 `/spec`(스펙 초안, 사람 승인 요청) 후 `spec: approved`가 붙으면 `/feature #번호`로 진행한다(절차: `docs/ai-system/playbooks/group-b.md`).
+- 인프라/배포는 `/infra-change #번호`, 성능은 `/perf-check #번호`로 진행한다(절차: `docs/ai-system/playbooks/group-c.md`).
+- 문서와 PR 본문은 `/doc-review`로 다듬는다.

@@ -47,7 +47,7 @@ BASH_CASES = [
     # 텍스트(커밋 메시지, heredoc, PR 본문)는 검사하지 않음
     ("git commit -q -F - <<'EOF'\nchore: terraform apply/destroy 차단, .env 접근 차단, git push origin dev 금지\nEOF\ngit push -q origin feature/ai-system", 0),
     ("git commit -m 'gh workflow run 차단 추가'", 0),
-    ("gh pr create --title t --body 'terraform apply 금지, .env 차단'", 0),
+    ("gh pr create --title t --body-file body.md", 0),
     ("cat <<EOF > notes.md\nterraform apply\nEOF", 0),
     ("git status", 0),
     # 클라우드 CLI: 조회만 허용
@@ -67,6 +67,14 @@ BASH_CASES = [
     ("scripts/ai/tf-check.sh infra/terraform/aws/runtime", 0),
 ]
 
+# 문서 교정 확인(저장소 상태와 무관한 경우만): CC_SKIP_DOC_REVIEW_CHECK 없이 실행
+DOC_CHECK_CASES = [
+    ("gh pr create --title t --body 'hi'", 2),       # 본문은 --body-file로만
+    ("gh pr create --title t --fill", 2),
+    ("gh pr create --title t --body-file b.md --head no-such-branch-xyz", 2),   # 브랜치를 못 찾으면 차단
+    ("gh pr view 3", 0),
+]
+
 FILE_CASES = [
     ("Read", ".env", 2),
     ("Read", "infra/terraform/dev/terraform.tfvars", 2),
@@ -79,9 +87,14 @@ FILE_CASES = [
 ]
 
 
-def run(script: str, payload: dict) -> int:
+def run(script: str, payload: dict, skip_doc_check: bool = True) -> int:
+    env = dict(os.environ)
+    if skip_doc_check:
+        env["CC_SKIP_DOC_REVIEW_CHECK"] = "1"   # 일반 케이스는 저장소의 교정 상태와 무관하게 판정
+    else:
+        env.pop("CC_SKIP_DOC_REVIEW_CHECK", None)
     return subprocess.run([sys.executable, os.path.join(HOOKS, script)], input=json.dumps(payload),
-                          capture_output=True, text=True, cwd=ROOT).returncode
+                          capture_output=True, text=True, cwd=ROOT, env=env).returncode
 
 
 def main() -> int:
@@ -91,12 +104,17 @@ def main() -> int:
         if rc != expect:
             fails += 1
             print(f"BAD rc={rc} expect={expect} | {cmd!r}")
+    for cmd, expect in DOC_CHECK_CASES:
+        rc = run("guard_bash.py", {"tool_name": "Bash", "tool_input": {"command": cmd}}, skip_doc_check=False)
+        if rc != expect:
+            fails += 1
+            print(f"BAD rc={rc} expect={expect} | {cmd!r}")
     for tool, path, expect in FILE_CASES:
         rc = run("guard_files.py", {"tool_name": tool, "tool_input": {"file_path": os.path.join(ROOT, path)}})
         if rc != expect:
             fails += 1
             print(f"BAD rc={rc} expect={expect} | {tool} {path}")
-    total = len(BASH_CASES) + len(FILE_CASES)
+    total = len(BASH_CASES) + len(DOC_CHECK_CASES) + len(FILE_CASES)
     print(f"{total - fails}/{total} 통과")
     return 1 if fails else 0
 

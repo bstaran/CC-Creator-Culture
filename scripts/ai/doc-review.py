@@ -9,9 +9,17 @@
     python3 scripts/ai/doc-review.py --model gemini-4-neon-high docs/ai-system/plan.md
     python3 scripts/ai/doc-review.py --stdin-name pr-body.md < pr-body.md   # 파일이 아닌 글(PR 본문 등)
 
-종료 코드: 0 완료, 3 agy를 쓸 수 없어 건너뜀, 2 잘못된 입력
+교정 기록(PR 생성 전 hook이 확인한다):
+    교정을 마친 문서는 내용 해시로 기록된다(.git/ai-doc-review.json, 커밋되지 않음, worktree 공유).
+    교정이 끝나면 자동으로 "reviewed", agy를 못 쓰거나 실패하면 "skipped"로 기록한다.
+    python3 scripts/ai/doc-review.py --mark <파일 ...>      # 제안을 반영한 뒤, 반영한 내용으로 다시 기록
+    python3 scripts/ai/doc-review.py --check-pr [--base dev] [--head <브랜치>] [--body-file <PR 본문>]
+                                                            # 브랜치에서 바뀐 .md와 PR 본문 중 기록 없는 파일 출력(있으면 종료 코드 1)
+
+종료 코드: 0 완료, 3 agy를 쓸 수 없어 건너뜀, 2 잘못된 입력, 1 교정 기록 없는 파일 있음(--check-pr)
 """
 import argparse
+import hashlib
 import json
 import os
 import shutil
@@ -26,6 +34,71 @@ DEFAULT_MODEL = "gemini-4-hydrogen-medium"
 FALLBACK_MODEL = "gemini-3.8-flash-high"   # 기본 모델이 과부하로 실패할 때
 RETRY_WAIT_SECONDS = 20
 CHUNK_LINES = 250
+# 교정 확인에서 제외할 경로(모델에 주는 프롬프트는 문장을 바꾸면 동작이 바뀐다)
+CHECK_EXCLUDE_PREFIXES = ("scripts/ai/prompts/",)
+
+
+def git_out(*args: str, cwd: str | None = None) -> str:
+    return subprocess.run(["git", *args], capture_output=True, text=True, cwd=cwd).stdout.strip()
+
+
+def state_path(cwd: str | None = None) -> str:
+    common = git_out("rev-parse", "--path-format=absolute", "--git-common-dir", cwd=cwd)
+    return os.path.join(common, "ai-doc-review.json")
+
+
+def load_state(cwd: str | None = None) -> dict:
+    try:
+        with open(state_path(cwd), encoding="utf-8") as fh:
+            return json.load(fh)
+    except (OSError, json.JSONDecodeError):
+        return {}
+
+
+def record(entries: list[tuple[str, bytes, str, str]], cwd: str | None = None) -> None:
+    """(이름, 내용, 상태, 메모) 목록을 내용 해시 기준으로 기록한다."""
+    state = load_state(cwd)
+    for name, content, status, note in entries:
+        state[hashlib.sha256(content).hexdigest()] = {
+            "path": name, "status": status, "note": note, "at": time.strftime("%Y-%m-%dT%H:%M:%S")}
+    with open(state_path(cwd), "w", encoding="utf-8") as fh:
+        json.dump(state, fh, ensure_ascii=False, indent=1)
+
+
+def check_pr(base: str, head: str, body_file: str | None) -> int:
+    """PR에 들어갈 .md(브랜치에 커밋된 내용)와 PR 본문 중 교정 기록이 없는 것을 찾는다."""
+    state = load_state()
+    base_ref = base if "/" in base else f"origin/{base}"
+    head = head.split(":", 1)[-1]   # owner:branch 형식
+    if subprocess.run(["git", "rev-parse", "--verify", "--quiet", head], capture_output=True).returncode != 0:
+        if subprocess.run(["git", "rev-parse", "--verify", "--quiet", f"origin/{head}"], capture_output=True).returncode == 0:
+            head = f"origin/{head}"
+        else:
+            print(f"PR 브랜치({head})를 찾을 수 없어 교정 여부를 확인하지 못했다. 브랜치를 push했는지 확인한다.")
+            return 1
+    changed = git_out("diff", "--name-only", "--diff-filter=AMR", f"{base_ref}...{head}", "--", "*.md").splitlines()
+    missing = []
+    for path in changed:
+        if not path or path.startswith(CHECK_EXCLUDE_PREFIXES):
+            continue
+        blob = subprocess.run(["git", "show", f"{head}:{path}"], capture_output=True).stdout
+        if hashlib.sha256(blob).hexdigest() not in state:
+            missing.append(path)
+    if body_file:
+        try:
+            with open(body_file, "rb") as fh:
+                if hashlib.sha256(fh.read()).hexdigest() not in state:
+                    missing.append(f"{body_file}(PR 본문)")
+        except OSError:
+            missing.append(f"{body_file}(PR 본문 파일을 읽을 수 없음)")
+    if missing:
+        print("교정 기록이 없는 문서(커밋된 내용 기준):")
+        for m in missing:
+            print(f"  - {m}")
+        print("`/doc-review`로 교정하고, 제안을 반영했다면 `python3 scripts/ai/doc-review.py --mark <파일>`로 기록한 뒤 커밋한다.")
+        return 1
+    print(f"교정 확인 통과({len(changed)}개 문서{', PR 본문' if body_file else ''})")
+    return 0
 
 
 def is_secret(path: str) -> bool:
@@ -123,12 +196,33 @@ def main() -> int:
                         help="기본 모델 실패 시 쓸 모델(빈 문자열이면 사용 안 함)")
     parser.add_argument("--timeout", type=int, default=240)
     parser.add_argument("--stdin-name", help="표준 입력으로 받은 글의 이름(PR 본문 등)")
+    parser.add_argument("--mark", action="store_true", help="교정 없이 현재 내용을 교정 완료로 기록(제안 반영 후에만 쓴다)")
+    parser.add_argument("--check-pr", action="store_true", help="PR에 들어갈 문서의 교정 기록 확인")
+    parser.add_argument("--base", default="dev")
+    parser.add_argument("--head", default="HEAD")
+    parser.add_argument("--body-file")
     args = parser.parse_args()
+
+    if args.check_pr:
+        return check_pr(args.base, args.head, args.body_file)
+    if args.mark:
+        entries = []
+        for path in args.files:
+            with open(path, "rb") as fh:
+                entries.append((path, fh.read(), "reviewed", "제안 반영 후 기록"))
+        record(entries)
+        print(f"교정 기록: {len(entries)}개")
+        return 0
 
     if not args.files and not args.stdin_name:
         parser.print_usage(sys.stderr)
         return 2
     if shutil.which("agy") is None:
+        skipped = []
+        for path in args.files:
+            with open(path, "rb") as fh:
+                skipped.append((path, fh.read(), "skipped", "agy 없음"))
+        record(skipped)
         print(json.dumps({"status": "skipped", "reason": "agy(Antigravity CLI)를 찾을 수 없다"}, ensure_ascii=False))
         return 3
 
@@ -156,6 +250,10 @@ def main() -> int:
         check([l.rstrip("\n") for l in lines], merged["suggestions"])
         merged["middle_dot_lines"] = [i + 1 for i, l in enumerate(lines) if "·" in l]
         result["files"][name] = merged
+        if merged["status"] == "ok":
+            record([(name, content.encode("utf-8"), "reviewed", ",".join(filter(None, merged.get("models", []))))])
+        else:
+            record([(name, content.encode("utf-8"), "skipped", f"교정 실패: {merged['status']}")])
 
     print(json.dumps(result, ensure_ascii=False, indent=2))
     return 0

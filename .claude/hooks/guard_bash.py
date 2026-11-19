@@ -12,6 +12,8 @@ import subprocess
 import sys
 
 PROTECTED_BRANCHES = {"dev", "main"}
+DOC_REVIEW_SCRIPT = os.path.join(os.path.dirname(os.path.abspath(__file__)), "..", "..", "scripts", "ai", "doc-review.py")
+CWD = {"path": os.getcwd()}   # 같은 명령 안의 `cd <경로>`를 따라간다(gh pr create 위치 판단용)
 WRAPPERS = {"sudo", "time", "command", "nohup", "env", "exec", "xargs"}
 TERRAFORM_ALLOWED = {"fmt", "init", "validate", "test", "version", "providers", "-version", "--version", "-help", "--help"}
 TEXT_ONLY_COMMANDS = {"echo", "printf"}
@@ -85,7 +87,39 @@ def check_terraform(argv: list[str]) -> None:
         block(f"`terraform {sub}`은 AI가 실행하지 않는다. 로컬에서는 fmt, init -backend=false, validate, test까지만 한다(infra/CLAUDE.md).")
 
 
+def option_value(argv: list[str], *names: str) -> str | None:
+    for i, a in enumerate(argv):
+        for n in names:
+            if a == n and i + 1 < len(argv):
+                return argv[i + 1]
+            if a.startswith(n + "="):
+                return a.split("=", 1)[1]
+    return None
+
+
+def check_pr_doc_review(argv: list[str]) -> None:
+    """PR을 만들기 전에 바뀐 문서와 PR 본문이 /doc-review를 거쳤는지 확인한다."""
+    if os.environ.get("CC_SKIP_DOC_REVIEW_CHECK") == "1" or not os.path.exists(DOC_REVIEW_SCRIPT):
+        return
+    if option_value(argv, "--body", "-b") is not None or "--fill" in argv or "-f" in argv:
+        block("PR 본문은 `--body-file <파일>`로 넘긴다. 본문 파일도 `/doc-review`로 교정한 뒤 PR을 만든다.")
+    body_file = option_value(argv, "--body-file", "-F")
+    cmd = [sys.executable, DOC_REVIEW_SCRIPT, "--check-pr",
+           "--base", option_value(argv, "--base", "-B") or "dev",
+           "--head", option_value(argv, "--head", "-H") or "HEAD"]
+    if body_file:
+        cmd += ["--body-file", body_file]
+    try:
+        result = subprocess.run(cmd, capture_output=True, text=True, timeout=30, cwd=CWD["path"])
+    except Exception:
+        return
+    if result.returncode == 1:
+        block("문서 교정(/doc-review)을 거치지 않은 문서가 있다.\n" + result.stdout.strip())
+
+
 def check_gh(argv: list[str]) -> None:
+    if argv[1:3] == ["pr", "create"]:
+        check_pr_doc_review(argv)
     if argv[1:3] == ["workflow", "run"]:
         block("GitHub 워크플로우 수동 실행(배포 포함)은 사람이 한다.")
     if len(argv) > 1 and argv[1] == "api" and any("/dispatches" in a for a in argv[2:]):
@@ -151,6 +185,9 @@ def check_segment(segment: str) -> None:
         return
     cmd = argv[0]
     is_text = cmd in TEXT_ONLY_COMMANDS
+
+    if cmd == "cd" and len(argv) > 1:
+        CWD["path"] = os.path.normpath(os.path.join(CWD["path"], os.path.expanduser(argv[1])))
 
     if cmd == "terraform":
         check_terraform(argv)
