@@ -113,7 +113,7 @@ gh issue create --repo <repo> --title "fix(order): ..." --label "type: bug" --la
 ```
 
 ### ② 지금 진행
-- **조사/문서**: 바로 답한다. 모든 주장에 `경로:줄` 근거를 붙인다.
+- **조사/문서**: 바로 답한다. 모든 주장에 `경로:줄` 근거를 붙인다. 결과를 문서 파일로 남기면 확정 전에 `/doc-review`로 문장을 다듬는다.
 - **리팩토링, 버그 수정**: `docs/ai-system/tasks/_template.md`를 복사해 상태 파일을 만든 뒤, `test-writer`(기준 테스트) → `implementer`(구현) → `arch-reviewer`(리뷰, 수정 요청 최대 2회) 순서로 진행한다.
 - **기능 개발**: 구현하지 않는다. 스펙 초안(완료 조건, API/이벤트 스키마)을 작성해 승인을 요청하는 단계까지만 진행한다.
 - **인프라/배포**: 변경 초안과 로컬 검증(`fmt`, `validate`, `test`)까지만 한다. `plan`, `apply`, 배포는 사람이 CI에서 한다.

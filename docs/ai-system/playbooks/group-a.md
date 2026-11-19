@@ -62,6 +62,8 @@ git worktree add --no-track .claude/worktrees/<이슈번호> -b <refactor|fix>/<
 
 ## 7. PR
 
+PR을 만들기 전에 이번 브랜치에서 AI가 쓰거나 고친 문서(`*.md`, 상태 파일 포함)와 PR 본문 파일에 `/doc-review`를 실행해 문장을 다듬는다. `agy`를 쓸 수 없으면 건너뛰고 PR 참고사항에 적는다.
+
 ```bash
 git push -u origin <브랜치>
 gh pr create --repo <origin 저장소> --base dev --title "<type>(<scope>): <요약>" --body-file <본문 파일>

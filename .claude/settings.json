@@ -16,7 +16,8 @@
       "Bash(terraform fmt *)",
       "Bash(terraform validate *)",
       "Bash(terraform init -backend=false *)",
-      "Bash(terraform test *)"
+      "Bash(terraform test *)",
+      "Bash(python3 scripts/ai/doc-review.py *)"
     ],
     "deny": [
       "Read(./.env)",
