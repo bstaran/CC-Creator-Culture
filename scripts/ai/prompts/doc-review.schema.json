@@ -6,12 +6,13 @@
       "items": {
         "type": "object",
         "properties": {
+          "file": { "type": "string", "description": "문서 이름(document의 name)" },
           "line": { "type": "integer", "description": "원문 줄 번호" },
           "original": { "type": "string", "description": "해당 줄에서 바꿀 부분(원문 그대로)" },
           "suggestion": { "type": "string", "description": "바꿀 문장" },
           "reason": { "type": "string", "description": "짧은 이유(예: 번역투, 중복, 띄어쓰기, 가운뎃점)" }
         },
-        "required": ["line", "original", "suggestion", "reason"]
+        "required": ["file", "line", "original", "suggestion", "reason"]
       }
     }
   },

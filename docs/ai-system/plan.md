@@ -407,7 +407,7 @@ flowchart LR
 | 2. 그룹 A | 완료(`/refactor-task`, `/bugfix`, `/characterize`, `/refactor-audit`, event-reviewer) | 1건 완료(#5, PR #9). 남은 검증: #6, #7, #8 |
 | 3. 그룹 B | 완료(`/spec`, `/feature`, schema-reviewer, 이벤트 스키마 스냅샷, `stack-up.sh`, `smoke-gateway.sh`) | 대기 |
 | 4. 그룹 C | 완료(`/infra-change`, `/perf-check`, infra-reviewer, `tf-check.sh`, `perf-compare.py`, hooks 차단 확장) | 대기 |
-| 공통 | `/doc-review`(다른 모델로 문서 문장 교정) | 대기(Gemini 서비스 복구 후) |
+| 공통 | `/doc-review`(다른 모델로 문서 문장 교정, PR 전 교정 확인) | 완료(PR #10 문서로 실제 실행, 묶음 방식으로 재설계) |
 | 5. 운영 | 미착수(주간 스캔 자동화, 지표 리뷰) | - |
 | CI 연동 | 미착수(`claude.yml`에서 `/triage` 시작) | CI 토큰 복구 후 |
 
@@ -468,13 +468,14 @@ flowchart LR
 - **CI 리뷰 모델**: 자동 리뷰는 Sonnet으로 하고, `@claude`로 요청할 때만 Opus를 쓸지 여부
 - ~~**스키마 테스트 방식**~~ **결정(2026-11-19)**: 이벤트 직렬화 구조 스냅샷 테스트(`EventSchemaSnapshotTest`)로 시작한다. API 스키마는 컨트롤러 테스트로 고정한다.
 - ~~**C 트랙 격리 환경**~~ **결정(2026-11-19)**: 로컬 compose만 쓴다. AI에게는 클라우드 자격 증명을 주지 않고, plan은 사람이 CI에서 실행한다.
+- ~~**문서 교정 방식**~~ **결정(2026-11-19)**: 사람이 읽는 문서의 바뀐 부분만 묶어서 PR 직전에 한 번 `gemini-4-neon-high`로 교정한다. hydrogen은 명백한 오류만 잡고 서술어 누락, 의미 중복 같은 문제를 놓쳐 쓰지 않는다. `agy`는 호출마다 고정 비용이 커서 호출 횟수를 줄이는 쪽으로 설계했다.
 - ~~**성능 판정 기준**~~ **결정(2026-11-19)**: 3회 실행의 중앙값을 기준으로 p95 +10% 또는 실패율 +1%p를 넘으면 실패로 판정한다(`perf-compare.py` 기본값).
 
 ## 15. 다음 단계
 
 1. 5단계 운영: 주간 자동 스캔(`/refactor-audit` 정기 실행, 결과는 `source: scan` 이슈 후보로 등록), 지표 기록 절차.
 2. CI 연동: 이슈의 `@claude` 호출이 `/triage`부터 시작하도록 `claude.yml` 수정(CI 토큰 복구 후 확인).
-3. 일괄 검증: 그룹 A(#6, #7, #8), 그룹 B(기능 1건), 그룹 C(인프라 변경 1건, 성능 비교 1건), `/doc-review` 실제 실행. 검증에서 나온 결함은 skill, 에이전트 지침, hooks를 보완해 해결하고 `metrics.md`에 기록한다.
+3. 일괄 검증: 그룹 A(#6, #7, #8), 그룹 B(기능 1건), 그룹 C(인프라 변경 1건, 성능 비교 1건). 검증에서 나온 결함은 skill, 에이전트 지침, hooks를 보완해 해결하고 `metrics.md`에 기록한다.
 4. 검증이 끝나면 동결해 둔 계층 위반(34개 클래스)을 리팩토링 트랙으로 개선한다.
 
 ---
