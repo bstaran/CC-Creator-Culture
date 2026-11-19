@@ -1,0 +1,5 @@
+{
+  "eventId" : "string",
+  "occurredAt" : "string",
+  "skuId" : "string"
+}

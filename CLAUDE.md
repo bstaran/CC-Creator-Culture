@@ -28,6 +28,7 @@
 ./gradlew build                                                               # 전체 빌드 및 테스트
 ./gradlew :apps:order-service:spotlessCheck                                   # 포맷 검사(origin/dev 대비 바뀐 파일만)
 ./gradlew :apps:order-service:spotlessApply                                   # 포맷 자동 수정
+scripts/ai/stack-up.sh && scripts/ai/smoke-gateway.sh; scripts/ai/stack-down.sh   # 로컬 전체 스택 기동, 게이트웨이 스모크, 종료(Docker, .env 필요)
 ```
 
 - 포맷은 기본 규칙(미사용 import 제거, 줄 끝 공백 제거, 파일 끝 개행)만 검사한다. 들여쓰기와 import 순서는 강제하지 않으므로, 파일을 고칠 때 그 파일의 기존 스타일을 따른다. `build`에는 포함되지 않고 모듈 CI가 따로 실행한다.
@@ -60,7 +61,7 @@
 ## 변경 시 주의
 
 - **DB 스키마**: Flyway 마이그레이션 경로는 `apps/<서비스>/src/main/resources/db/migration/V<n>__<설명>.sql`이다. 이미 있는 마이그레이션 파일은 수정하지 않고 새 버전을 추가한다.
-- **Kafka 이벤트**: 이벤트 클래스는 `libs/common`의 `kafka` 패키지에 있고 여러 서비스가 소비한다. 필드 변경 시 하위 호환을 유지하고, 생산자와 소비자를 함께 확인한다. 주문, 결제, 카테고리/해시태그 이벤트는 outbox를 거쳐 발행한다(직접 `KafkaTemplate` 발행을 추가하지 않는다).
+- **Kafka 이벤트**: 이벤트 클래스는 `libs/common`의 `kafka` 패키지에 있고 여러 서비스가 소비한다. 필드 변경 시 하위 호환을 유지하고, 생산자와 소비자를 함께 확인한다. 주문, 결제, 카테고리/해시태그 이벤트는 outbox를 거쳐 발행한다(직접 `KafkaTemplate` 발행을 추가하지 않는다). 이벤트 구조는 `EventSchemaSnapshotTest`가 스냅샷(`libs/common/src/test/resources/schema/events/`)으로 고정한다. 구조를 바꾸면 이 테스트가 실패하며, 의도한 변경일 때만 `SCHEMA_SNAPSHOT_UPDATE=true`로 스냅샷을 갱신해 함께 커밋한다.
 - **게이트웨이 라우트**: `config-repo/gateway-local.yaml`, `gateway-dev.yaml`, `gateway-prod.yaml` 세 파일을 함께 수정한다. 새 API를 추가하면 라우트가 누락되지 않았는지 확인한다.
 - **서비스 간 동기 호출**: OpenFeign을 사용한다. 내부 API 경로와 인증 헤더 처리 규칙은 기존 클라이언트를 확인해 따른다.
 

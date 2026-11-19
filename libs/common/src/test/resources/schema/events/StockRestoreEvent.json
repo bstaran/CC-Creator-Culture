@@ -1,0 +1,8 @@
+{
+  "items" : [ {
+    "quantity" : "integer",
+    "skuId" : "string"
+  } ],
+  "orderId" : "string",
+  "reason" : "string"
+}

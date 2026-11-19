@@ -75,5 +75,5 @@ gh pr create --repo <origin 저장소> --base dev --title "<type>(<scope>): <요
 
 ## 8. 정리
 
-- PR이 머지되거나 닫히면 `git worktree remove .claude/worktrees/<이슈번호>`.
+- PR 상태를 먼저 확인하고(`gh pr view <번호> --repo <origin 저장소> --json state`), `MERGED`나 `CLOSED`일 때만 `git worktree remove .claude/worktrees/<이슈번호>`. 사람의 "머지했다"는 말만으로 정리하지 않는다.
 - 리뷰에서 반복된 지적은 `docs/ai-system/metrics.md`의 피드백 기록에 남기고, 2회 이상 반복되면 `CLAUDE.md`나 에이전트 지침 보강을 제안한다.

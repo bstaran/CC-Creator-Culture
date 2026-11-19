@@ -1,0 +1,7 @@
+{
+  "orderId" : "string",
+  "productQuantities" : [ {
+    "productId" : "string",
+    "quantity" : "integer"
+  } ]
+}

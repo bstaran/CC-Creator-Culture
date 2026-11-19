@@ -124,4 +124,4 @@ gh issue create --repo <repo> --title "fix(order): ..." --label "type: bug" --la
 
 ---
 
-트랙 전용 스킬로 넘긴다. 이슈가 등록된 리팩토링은 `/refactor-task #번호`, 버그 수정은 `/bugfix #번호`(절차: `docs/ai-system/playbooks/group-a.md`). 그 밖의 트랙 스킬(`/spec`, `/feature`, `/infra-change`, `/perf-check`)은 이후 단계에서 추가되며, 그전까지는 위 "지금 진행" 방식으로 처리한다.
+트랙 전용 스킬로 넘긴다. 이슈가 등록된 리팩토링은 `/refactor-task #번호`, 버그 수정은 `/bugfix #번호`(절차: `docs/ai-system/playbooks/group-a.md`). 기능 개발은 `/spec`(스펙 초안, 사람 승인 요청) 후 `spec: approved`가 붙으면 `/feature #번호`(절차: `docs/ai-system/playbooks/group-b.md`). 그 밖의 트랙 스킬(`/infra-change`, `/perf-check`)은 이후 단계에서 추가되며, 그전까지는 위 "지금 진행" 방식으로 처리한다.

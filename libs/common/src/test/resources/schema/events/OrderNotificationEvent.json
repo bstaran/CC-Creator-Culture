@@ -1,0 +1,12 @@
+{
+  "buyerId" : "string",
+  "cancellationScope" : "null",
+  "eventId" : "string",
+  "eventType" : "string",
+  "occurredAt" : "string",
+  "orderNumber" : "string",
+  "paymentStatus" : "string",
+  "referenceId" : "string",
+  "referenceType" : "string",
+  "sourceService" : "string"
+}
