@@ -64,9 +64,11 @@ jobs:
       - name: List changed source files
         id: changed
         run: |
-          git log --since="${SINCE}T00:00:00Z" --until="${UNTIL}T23:59:59Z" --name-only --format= origin/dev \
-            -- apps libs infra/gateway \
-            | grep -E '\.(java|lua|ya?ml|sql|kts?|gradle)$' | sort -u > changed.txt || true
+          # 머지 커밋은 첫 부모와 비교해야 PR 전체의 변경 파일이 나온다(브랜치 커밋 시각이 기간 밖이어도 잡힌다).
+          # grep이 아무것도 못 찾은 경우(종료 코드 1)만 허용하고 git 실패는 그대로 드러낸다.
+          git log --first-parent --diff-merges=first-parent --since="${SINCE}T00:00:00Z" --until="${UNTIL}T23:59:59Z" \
+            --name-only --format= origin/dev -- apps libs infra/gateway \
+            | { grep -E '\.(java|lua|ya?ml|sql|kts?|gradle)$' || test $? = 1; } | sort -u > changed.txt
           echo "count=$(wc -l < changed.txt)" >> "$GITHUB_OUTPUT"
 
       - uses: actions/upload-artifact@v4
@@ -128,7 +130,7 @@ jobs:
 
   report:
     needs: [metrics, scan]
-    if: always() && needs.metrics.result == 'success'
+    if: ${{ !cancelled() && needs.metrics.result == 'success' }}
     runs-on: ubuntu-latest
     timeout-minutes: 5
     permissions:

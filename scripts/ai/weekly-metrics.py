@@ -29,6 +29,7 @@ import sys
 
 ROOT = os.path.abspath(os.path.join(os.path.dirname(__file__), "..", ".."))
 AI_LABEL = "ai: generated"
+REPORT_LABEL = "report: weekly"   # 자동 생성되는 주간 리포트 이슈는 이슈 지표에서 뺀다
 TRACKS = [  # (라벨, 표시 이름) 표시 순서
     ("type: refactor", "리팩토링"),
     ("type: bug", "버그 수정"),
@@ -61,6 +62,27 @@ def source_of(labels: list[str]) -> str | None:
         if label in labels:
             return name
     return None
+
+
+def cell(text: str) -> str:
+    """마크다운 표 셀에 넣을 수 있게 파이프와 줄바꿈을 정리한다."""
+    return " ".join(str(text).split()).replace("|", "\\|")
+
+
+def same_repo_refs(pr: dict, repo: str) -> list[dict]:
+    """PR이 닫는 이슈 중 같은 저장소의 이슈만 남긴다(다른 저장소 이슈 번호를 이 저장소에서 찾지 않도록)."""
+    owner, name = repo.split("/", 1)
+    refs = []
+    for ref in pr.get("closingIssuesReferences", []):
+        r = ref.get("repository") or {}
+        if r and (r.get("name"), (r.get("owner") or {}).get("login")) != (name, owner):
+            continue
+        refs.append(ref)
+    return refs
+
+
+def without_reports(issues: list[dict]) -> list[dict]:
+    return [i for i in issues if REPORT_LABEL not in [l["name"] for l in i.get("labels", [])]]
 
 
 def commits_after_open(pr: dict) -> int:
@@ -156,15 +178,18 @@ def fetch(repo: str, base: str, since: str, until: str):
                    "--json", "number,title,url,labels,additions,deletions,createdAt,mergedAt,closingIssuesReferences"])
     for pr in prs:  # 커밋과 리뷰는 목록 조회에 넣으면 GraphQL 노드 한도를 넘어서 PR마다 따로 조회한다
         pr.update(gh_json(["pr", "view", str(pr["number"]), "--repo", repo, "--json", "commits,reviews"]))
-    opened = gh_json(["issue", "list", "--repo", repo, "--state", "all", "--limit", "200",
-                      "--search", f"created:{period}", "--json", "number,title,labels,state"])
-    backlog = gh_json(["issue", "list", "--repo", repo, "--state", "open", "--limit", "500",
-                       "--json", "number,labels"])
-    linked = {n["number"] for pr in prs for n in pr.get("closingIssuesReferences", [])}
+        pr["closingIssuesReferences"] = same_repo_refs(pr, repo)
+    opened = without_reports(gh_json(["issue", "list", "--repo", repo, "--state", "all", "--limit", "200",
+                                      "--search", f"created:{period}", "--json", "number,title,labels,state"]))
+    backlog = without_reports(gh_json(["issue", "list", "--repo", repo, "--state", "open", "--limit", "500",
+                                       "--json", "number,labels"]))
+    linked = {n["number"] for pr in prs for n in pr["closingIssuesReferences"]}
     known = {i["number"]: [l["name"] for l in i["labels"]] for i in opened + backlog}
     for number in sorted(linked - known.keys()):
-        issue = gh_json(["issue", "view", str(number), "--repo", repo, "--json", "labels"])
-        known[number] = [l["name"] for l in issue["labels"]]
+        out = subprocess.run(["gh", "issue", "view", str(number), "--repo", repo, "--json", "labels"],
+                             capture_output=True, text=True, cwd=ROOT)
+        # 지워졌거나 볼 수 없는 이슈 하나 때문에 전체 수집을 멈추지 않는다(유입 경로는 "이슈 연결"로 남는다)
+        known[number] = [l["name"] for l in json.loads(out.stdout)["labels"]] if out.returncode == 0 else []
     return prs, opened, backlog, known
 
 
@@ -203,7 +228,7 @@ def render(since: str, until: str, prs, opened, backlog, issue_labels, with_cove
                 "|---|---|:-:|---:|---:|---:|---:|"]
         for p in sorted(prs, key=lambda p: p["number"]):
             labels = [l["name"] for l in p["labels"]]
-            out.append(f"| #{p['number']} {p['title']} | {track_of(labels)} | {'O' if AI_LABEL in labels else ''} "
+            out.append(f"| #{p['number']} {cell(p['title'])} | {track_of(labels)} | {'O' if AI_LABEL in labels else ''} "
                        f"| {p['additions'] + p['deletions']} | {fmt_hours(lead_hours(p))} "
                        f"| {commits_after_open(p)} | {changes_requested(p)} |")
     else:
@@ -211,7 +236,7 @@ def render(since: str, until: str, prs, opened, backlog, issue_labels, with_cove
 
     out += ["", "### 이슈", ""]
     out += ["| 트랙 | 새로 열림 | 그중 정기 스캔 | 열린 이슈 |", "|---|---:|---:|---:|"]
-    names = [name for _, name in TRACKS if name != "AI 체계"] + [UNCLASSIFIED]
+    names = [name for _, name in TRACKS] + [UNCLASSIFIED]
     for name in names:
         new = [i for i in opened if track_of([l["name"] for l in i["labels"]]) == name]
         scan = [i for i in new if source_of([l["name"] for l in i["labels"]]) == "정기 스캔"]

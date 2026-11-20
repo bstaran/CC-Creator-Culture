@@ -93,9 +93,39 @@ class FrozenViolationTest(unittest.TestCase):
             self.assertEqual(wm.frozen_violations(d), (4, 5))
 
     def test_repositoryStoreIsReadable(self):
-        total = [wm.frozen_violations(os.path.join(wm.ROOT, "apps", s, "src/test/resources/archunit_store"))
-                 for s in wm.SERVICES]
-        self.assertTrue(all(c > 0 and d >= c for c, d in total))
+        for s in wm.SERVICES:   # 위반을 모두 고쳐 0이 되어도 통과해야 한다
+            store = os.path.join(wm.ROOT, "apps", s, "src/test/resources/archunit_store")
+            self.assertTrue(os.path.isdir(store), store)
+            c, d = wm.frozen_violations(store)
+            self.assertTrue(0 <= c <= d, (s, c, d))
+
+
+class RenderTest(unittest.TestCase):
+    def issue(self, number, *labels):
+        return {"number": number, "title": f"이슈 {number}", "labels": [{"name": l} for l in labels]}
+
+    def render(self, prs=(), opened=(), backlog=()):
+        return wm.render("2026-11-13", "2026-11-19", list(prs), list(opened), list(backlog), {}, False)
+
+    def test_aiSystemIssuesAreCounted(self):
+        out = self.render(opened=[self.issue(1, "area: ai-system")], backlog=[self.issue(1, "area: ai-system")])
+        self.assertIn("| AI 체계 | 1 | 0 | 1 |", out)
+
+    def test_pipeInTitleIsEscaped(self):
+        out = self.render(prs=[dict(pr(7, ["type: bug"]), title="fix: a|b\nc")])
+        self.assertIn("#7 fix: a\\|b c |", out)
+
+    def test_reportIssuesAreExcluded(self):
+        issues = [self.issue(1, "report: weekly"), self.issue(2, "type: bug")]
+        self.assertEqual([i["number"] for i in wm.without_reports(issues)], [2])
+
+
+class SameRepoRefsTest(unittest.TestCase):
+    def test_keepsOnlyIssuesOfThisRepository(self):
+        refs = [{"number": 5, "repository": {"name": "CC", "owner": {"login": "me"}}},
+                {"number": 6, "repository": {"name": "CC", "owner": {"login": "team"}}},
+                {"number": 7}]
+        self.assertEqual([r["number"] for r in wm.same_repo_refs({"closingIssuesReferences": refs}, "me/CC")], [5, 7])
 
 
 if __name__ == "__main__":
