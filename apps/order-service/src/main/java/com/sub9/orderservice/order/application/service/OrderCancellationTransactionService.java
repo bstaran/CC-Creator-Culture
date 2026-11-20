@@ -5,7 +5,6 @@ import com.sub9.common.exception.BusinessException;
 import com.sub9.common.kafka.event.OrderCanceledEvent;
 import com.sub9.orderservice.order.application.port.output.PaymentCancellationPort;
 import com.sub9.orderservice.order.application.port.output.StockPort.RestoreReason;
-import com.sub9.orderservice.order.application.port.output.StockPort.StockItem;
 import com.sub9.orderservice.order.application.port.output.StockRestoreCommand;
 import com.sub9.orderservice.order.domain.exception.OrderErrorCode;
 import com.sub9.orderservice.order.domain.model.Order;
@@ -19,7 +18,6 @@ import java.time.Instant;
 import com.sub9.common.kafka.event.OrderNotificationEvent;
 import com.sub9.common.identifier.UuidV7Generator;
 import java.util.Map;
-import java.util.stream.Collectors;
 import java.util.UUID;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
@@ -48,17 +46,9 @@ public class OrderCancellationTransactionService {
                 "주문 취소 성공",
                 new CancelOrderResponse(order.getOrderNumber().toString(), order.getStatus(), canceledAt));
         idempotencyService.completeSuccess(commandRequestId, order, 200, responseBody);
-        StockRestoreCommand stockRestore = new StockRestoreCommand(
-                order.getId(),
-                order.getItems().stream()
-                        .map(item -> new StockItem(item.getSkuId(), item.getProductSnapshot().getQuantity()))
-                        .toList(),
-                RestoreReason.ORDER_CANCEL);
+        StockRestoreCommand stockRestore = StockRestoreCommand.of(order, RestoreReason.ORDER_CANCEL);
         // 동일 상품의 SKU가 여러 개면 취소 수량을 상품 기준으로 합산해 리더보드에 한 번 반영한다.
-        Map<UUID, Long> quantitiesByProduct = order.getItems().stream()
-                .collect(Collectors.groupingBy(
-                        item -> item.getProductId(),
-                        Collectors.summingLong(item -> item.getProductSnapshot().getQuantity())));
+        Map<UUID, Long> quantitiesByProduct = order.quantitiesByProduct();
         outbox.write(KafkaTopics.ORDER_CANCELED, order.getId().toString(), new OrderCanceledEvent(order.getId(),
                 quantitiesByProduct.entrySet().stream()
                 .map(entry -> new OrderCanceledEvent.ProductQuantity(entry.getKey(), entry.getValue()))

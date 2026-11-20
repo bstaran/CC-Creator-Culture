@@ -23,9 +23,11 @@ import java.util.ArrayList;
 import java.util.Collections;
 import java.util.HashSet;
 import java.util.List;
+import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
 import java.util.UUID;
+import java.util.stream.Collectors;
 import lombok.AccessLevel;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
@@ -113,6 +115,23 @@ public class Order extends BaseEntity {
 
     public List<OrderItem> getItems() {
         return Collections.unmodifiableList(items);
+    }
+
+    /** 주문 항목에 사용된 사용자 쿠폰 ID를 null 제외, 중복 제거, 처음 나온 순서로 반환한다. */
+    public List<UUID> usedUserCouponIds() {
+        return items.stream()
+                .map(item -> item.getUserCouponId())
+                .filter(id -> id != null)
+                .distinct()
+                .toList();
+    }
+
+    /** 상품별 주문 수량 합계를 반환한다. 동일 상품의 SKU가 여러 개면 합산한다. */
+    public Map<UUID, Long> quantitiesByProduct() {
+        return items.stream()
+                .collect(Collectors.groupingBy(
+                        item -> item.getProductId(),
+                        Collectors.summingLong(item -> item.getProductSnapshot().getQuantity())));
     }
 
     public void markPaid(Instant processedAt) {
