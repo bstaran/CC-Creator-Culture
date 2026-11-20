@@ -60,10 +60,13 @@ scripts/ai/stack-up.sh && scripts/ai/smoke-gateway.sh; scripts/ai/stack-down.sh 
 
 ## 문서 작성
 
-PR 본문, 이슈 본문, `docs/`, 상태 파일처럼 사람이 읽는 글에 적용한다. 작성 뒤 `/doc-review`가 문장을 교정한다.
+PR 본문, 이슈 본문, `docs/`, 상태 파일처럼 사람이 읽는 글에 적용한다. 독자는 이 작업의 맥락을 모르는 팀원이다. 작성 뒤 `/doc-review`가 문장을 교정한다.
 
+- 첫머리에 무엇이 바뀌고 왜 필요한지를 두세 문장으로 쓴다. 세부 내용은 그 뒤에 둔다.
+- 독자가 판단하는 데 필요한 내용만 쓴다. 명령 옵션, 내부 함수 이름, 리뷰 지적 번호나 건수 같은 구현 세부는 꼭 필요할 때만 쓰고, 나머지는 파일 경로로 대신한다.
+- 처음 보는 용어와 약어는 풀어 쓰고, 기술적인 조치는 무엇을 막거나 가능하게 하는지가 드러나게 쓴다.
 - 맥락 없는 짧은 도입문("결과를 거릅니다.", "정리합니다.")을 쓰지 않는다. 문장은 주어, 대상, 동작을 갖춰 그것만 읽어도 뜻이 통하게 쓴다.
-- 항목 하나는 무엇을 어떻게 바꿨고 왜 그런지를 한두 문장으로 완결한다. 짧은 문장을 마침표로 끊어 나열하지 않는다.
+- 항목 하나는 한 가지 내용을 한두 문장으로 완결한다. 짧은 문장을 마침표로 끊어 나열하지 않고, 괄호 안에 긴 설명을 넣지 않는다.
 - 소설체, 수사적 표현, 과장을 쓰지 않는다. 사실과 근거만 쓴다.
 - 가운뎃점(`·`)은 쓰지 않는다. 나열은 쉼표, 슬래시, 목록으로 쓴다.
 
@@ -101,7 +104,7 @@ PR 본문, 이슈 본문, `docs/`, 상태 파일처럼 사람이 읽는 글에 �
 
 `.claude/settings.json`의 hooks가 위 규칙 일부를 강제한다(스크립트: `.claude/hooks/`, python3 필요).
 
-- `guard_bash.py`: terraform plan/apply/destroy/state 등, 워크플로우 수동 실행, 클라우드 CLI 쓰기 명령(`aws`, `oci`는 조회만 허용), 이미지 push, `origin` 외 push, `dev`/`main` push, force push, `.env` 접근, `-x test`를 차단한다.
+- `guard_bash.py`: terraform plan/apply/destroy/state 등, 워크플로우 수동 실행, 클라우드 CLI 쓰기 명령(`aws`, `oci`는 조회만 허용), 이미지 push, `origin` 외 push, `dev`/`main` push, force push, `.env` 접근, `-x test`, PR 머지와 승인, `spec: approved` 라벨 부착을 차단한다. push는 force 변형(`+refspec`, `-uf`)과 `--mirror`, `--all`, 원격 브랜치 삭제도 막고, `git remote` 변경과 명령 실행이 가능한 git 설정(`alias.` 등)도 막는다.
 - `guard_files.py`: 비밀 값 파일(`.env`, `*.tfvars`, `backend.hcl`, `*.tfstate`) 읽기와 수정, 기존 Flyway 마이그레이션 수정을 차단한다.
 - `guard_bash.py`(PR 생성): `gh pr create`를 실행할 때 브랜치에서 바뀐 사람이 읽는 문서(`.claude/`, `CLAUDE.md` 제외)와 PR 본문(`--body-file`)에 `/doc-review` 교정 기록이 있는지 확인하고, 없으면 차단한다.
 - `verify_compile.py`(Stop): 커밋되지 않은 Java/Gradle 변경이 있으면 해당 모듈의 포맷 검사(`spotlessCheck`)와 컴파일을 실행하고, 실패하면 작업을 끝내지 못하게 한다. 같은 내용은 다시 실행하지 않는다. `CC_SKIP_VERIFY=1`로 끌 수 있다.
