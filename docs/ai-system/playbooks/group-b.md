@@ -50,7 +50,7 @@ flowchart TD
 scripts/ai/stack-up.sh && scripts/ai/smoke-gateway.sh; scripts/ai/stack-down.sh   # 여러 서비스가 걸리거나 라우트, 인증이 바뀐 경우
 ```
 
-- 스택 스모크 테스트를 실행하려면 Docker와 레포 루트 `.env`가 필요하다. 실행할 수 없으면 건너뛰고 PR에 적는다.
+- 스택 스모크 테스트를 실행하려면 Docker와 레포 루트 `.env`가 필요하다. 실행할 수 없으면 건너뛰고, 그 사실을 PR에 적는다.
 - 완료 조건(AC)마다 통과한 테스트 이름을 상태 파일에 대응표로 적는다.
 
 ## 5. 리뷰
