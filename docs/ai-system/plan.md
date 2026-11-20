@@ -1,5 +1,7 @@
 # CC AI 개발 운영 체계
 
+> 처음 읽는다면 [README.md](README.md)(체계 소개)와 [guide.md](guide.md)(사용 방법)를 먼저 본다. 이 문서는 설계 배경, 결정 기록, 로드맵을 담는다.
+
 > 상태: 초안(팀 검토 전) | 작성일: 2026-11-18 | 대상: cc-service(Java 21, Spring Boot 4.1 MSA)
 
 ## 목차
