@@ -44,7 +44,7 @@ HERE = os.path.dirname(os.path.abspath(__file__))
 PROMPT_FILE = os.path.join(HERE, "prompts", "doc-review.md")
 SCHEMA_FILE = os.path.join(HERE, "prompts", "doc-review.schema.json")
 GLOSSARY_FILE = os.path.join(HERE, "prompts", "doc-review-glossary.txt")
-DEFAULT_MODEL = "gemini-4-neon-high"
+DEFAULT_MODEL = "gemini-4-neon-medium"
 DEFAULT_BASE = "dev"
 RETRY_WAIT_SECONDS = 20
 BATCH_LINES = 200        # 한 번 호출에 보내는 최대 줄 수
@@ -312,6 +312,7 @@ def extract_json(text: str) -> dict:
 # ---------- 거르기 ----------
 
 BACKTICK = re.compile(r"`[^`]*`")
+LINE_PREFIX = re.compile(r"^\s*(?:#{1,6}\s+|(?:[-*+]|\d+\.)\s+(?:\[[ xX]\]\s+)?|>\s*)*")   # 들여쓰기, 제목, 목록, 체크박스, 인용
 
 
 def code_block_lines(lines: list[str]) -> set[int]:
@@ -335,6 +336,8 @@ def filter_reason(s: dict, lines: list[str], sent: set[int], code: set[int], glo
     if ln not in sent or not (0 < ln <= len(lines)):
         return "not-sent-line"
     text = lines[ln - 1]
+    if orig and orig not in text and orig.strip() and orig.strip() in text:
+        orig = orig.strip()   # 줄 전체를 다시 쓰는 제안은 앞뒤 공백을 붙여 오기도 한다
     if not orig or orig not in text:
         return "original-not-found"
     if orig == sug:
@@ -343,15 +346,25 @@ def filter_reason(s: dict, lines: list[str], sent: set[int], code: set[int], glo
         return "middle-dot"
     if ln in code:
         return "code-block"
-    if sorted(BACKTICK.findall(orig)) != sorted(BACKTICK.findall(sug)):
+    # 백틱 안 내용은 그대로여야 한다. 문장을 다시 쓰며 같은 식별자를 한 번 더 쓰는 것은 허용한다(집합으로 비교)
+    if set(BACKTICK.findall(orig)) != set(BACKTICK.findall(sug)):
         return "backtick"
     new = text.replace(orig, sug, 1)
-    if text.count("|") != new.count("|"):
+    if LINE_PREFIX.match(new).group(0) != LINE_PREFIX.match(text).group(0):
+        return "structure"   # 목록 기호, 제목, 들여쓰기가 바뀌면 마크다운 구조가 깨진다
+    if text.lstrip().startswith("|") and text.count("|") != new.count("|"):
         return "table"
     for term in glossary:
-        if new.count(term) < text.count(term):
+        if glossary_changed(term, text, new):
             return "glossary"
     return None
+
+
+def glossary_changed(term: str, before: str, after: str) -> bool:
+    """고정 표기를 다른 표기(예: 띄어쓰기)로 바꿨거나 아예 없앴으면 True. 문장을 합쳐 횟수만 줄어든 것은 허용한다."""
+    loose = re.compile(r"\s*".join(map(re.escape, term)))
+    variants = len(loose.findall(after)) - after.count(term)
+    return variants > len(loose.findall(before)) - before.count(term) or (term in before and term not in after)
 
 
 # ---------- 실행 ----------

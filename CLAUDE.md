@@ -58,6 +58,15 @@ scripts/ai/stack-up.sh && scripts/ai/smoke-gateway.sh; scripts/ai/stack-down.sh 
 - 기존 테스트의 한국어 메서드 이름은 그대로 두고, 새로 쓰거나 고치는 테스트부터 이 규칙을 따른다.
 - ArchUnit `@ArchTest`는 필드 대신 메서드로 쓴다(`@DisplayName`은 필드에 붙일 수 없다). ArchUnit 엔진은 리포트에 `@DisplayName`을 표시하지 않고 메서드 이름을 쓴다.
 
+## 문서 작성
+
+PR 본문, 이슈 본문, `docs/`, 상태 파일처럼 사람이 읽는 글에 적용한다. 작성 뒤 `/doc-review`가 문장을 교정한다.
+
+- 맥락 없는 짧은 도입문("결과를 거릅니다.", "정리합니다.")을 쓰지 않는다. 문장은 주어, 대상, 동작을 갖춰 그것만 읽어도 뜻이 통하게 쓴다.
+- 항목 하나는 무엇을 어떻게 바꿨고 왜 그런지를 한두 문장으로 완결한다. 짧은 문장을 마침표로 끊어 나열하지 않는다.
+- 소설체, 수사적 표현, 과장을 쓰지 않는다. 사실과 근거만 쓴다.
+- 가운뎃점(`·`)은 쓰지 않는다. 나열은 쉼표, 슬래시, 목록으로 쓴다.
+
 ## 변경 시 주의
 
 - **DB 스키마**: Flyway 마이그레이션 경로는 `apps/<서비스>/src/main/resources/db/migration/V<n>__<설명>.sql`이다. 이미 있는 마이그레이션 파일은 수정하지 않고 새 버전을 추가한다.
@@ -97,4 +106,4 @@ scripts/ai/stack-up.sh && scripts/ai/smoke-gateway.sh; scripts/ai/stack-down.sh 
 - `guard_bash.py`(PR 생성): `gh pr create`를 실행할 때 브랜치에서 바뀐 사람이 읽는 문서(`.claude/`, `CLAUDE.md` 제외)와 PR 본문(`--body-file`)에 `/doc-review` 교정 기록이 있는지 확인하고, 없으면 차단한다.
 - `verify_compile.py`(Stop): 커밋되지 않은 Java/Gradle 변경이 있으면 해당 모듈의 포맷 검사(`spotlessCheck`)와 컴파일을 실행하고, 실패하면 작업을 끝내지 못하게 한다. 같은 내용은 다시 실행하지 않는다. `CC_SKIP_VERIFY=1`로 끌 수 있다.
 
-hook을 고치면 `python3 .claude/hooks/test_guards.py`(차단/허용 회귀 테스트)를 실행한다. 문서 교정 스크립트를 고치면 `python3 scripts/ai/test_doc_review.py`, 주간 지표 스크립트를 고치면 `python3 scripts/ai/test_weekly_metrics.py`를 실행한다. hook이 차단하면 우회하지 말고 사유를 사용자에게 보고한다.
+hook을 고치면 `python3 .claude/hooks/test_guards.py`(차단/허용 회귀 테스트)를 실행한다. 문서 교정 스크립트를 고치면 `python3 scripts/ai/test_doc_review.py`, 주간 지표 스크립트를 고치면 `python3 scripts/ai/test_weekly_metrics.py`, 코드 리뷰 스크립트를 고치면 `python3 scripts/ai/test_code_review.py`를 실행한다. hook이 차단하면 우회하지 말고 사유를 사용자에게 보고한다.
