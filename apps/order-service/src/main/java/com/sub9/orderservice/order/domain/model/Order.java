@@ -126,7 +126,7 @@ public class Order extends BaseEntity {
                 .toList();
     }
 
-    /** 상품별 주문 수량 합계를 반환한다. 동일 상품의 SKU가 여러 개면 합산한다. */
+    /** 상품별 주문 수량 합계를 반환한다. 동일 상품의 SKU가 여러 개면 합산한다. 반환 Map의 순회 순서는 보장하지 않는다. */
     public Map<UUID, Long> quantitiesByProduct() {
         return items.stream()
                 .collect(Collectors.groupingBy(
