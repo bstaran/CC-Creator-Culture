@@ -65,6 +65,17 @@ BASH_CASES = [
     ("docker compose -f load-test/docker-compose.yml run --rm k6 run x.js", 0),
     ("docker run --rm -v $PWD:/repo hashicorp/terraform:1.12.2 validate", 0),
     ("scripts/ai/tf-check.sh infra/terraform/aws/runtime", 0),
+    # 머지, 승인, 스펙 승인 라벨은 사람만
+    ("gh pr merge 12 --squash", 2),
+    ("gh api -X PUT repos/o/r/pulls/12/merge", 2),
+    ("gh pr review 12 --approve", 2),
+    ("gh pr review 12 --comment -b 'x'", 0),
+    ("gh issue edit 7 --add-label 'spec: approved'", 2),
+    ("gh issue edit 7 --add-label 'type: feature,spec: approved'", 2),
+    ("gh issue create --title t --label 'type: feature' --label 'spec: approved' --body-file b.md", 2),
+    ("gh api repos/o/r/issues/7/labels -f 'labels[]=spec: approved'", 2),
+    ("gh issue edit 7 --add-label 'type: bug'", 0),
+    ("gh issue comment 7 --body-file c.md", 0),
 ]
 
 # 문서 교정 확인(저장소 상태와 무관한 경우만): CC_SKIP_DOC_REVIEW_CHECK 없이 실행

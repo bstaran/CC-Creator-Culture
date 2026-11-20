@@ -55,3 +55,16 @@ python3 scripts/ai/weekly-metrics.py --since 2026-11-01 --until 2026-11-30 --cov
 | 사용량 | 구독 사용량 화면에서 확인한다. 예산을 넘으면 모델 배치나 CI 자동 실행 범위를 줄인다 |
 
 4. **기록**: `metrics.md`의 "월간 리뷰"에 지표 요약 표와 결정 사항을 남긴다. 규칙을 바꾸기로 했으면 해당 문서를 고치는 PR을 따로 연다.
+
+## CI 토큰 복구 후 첫 확인
+
+`CLAUDE_CODE_OAUTH_TOKEN`을 복구하면 아래 항목을 한 번씩 확인한다. 결과는 `metrics.md` 파이프라인 검증 기록에 남긴다.
+
+| 대상 | 확인 방법 | 볼 것 |
+|---|---|---|
+| `ai-weekly.yml` | Actions 탭에서 직접 실행(스캔 켬, 끔 한 번씩) | scan job 로그의 허용 도구 목록에 `./gradlew`, `terraform`, `gh pr`가 없는지, `.ai-cache/weekly/scan.md`가 만들어지는지, 리포트 본문에 토큰처럼 보이는 문자열이 없는지 |
+| `claude.yml` 분류 | 테스트 이슈에 `@claude` | `/triage` 결과 댓글만 남기고 코드, 브랜치, 라벨을 바꾸지 않는지 |
+| `claude.yml` 진행 | 같은 이슈에 `@claude 진행해` | 트랙 라벨, 브랜치, PR이 만들어지는지, AI가 만든 PR에서 모듈 CI가 실행되는지(워크플로우 토큰으로 만든 PR은 다른 워크플로우를 실행하지 않는다) |
+| `claude.yml` 주간 리포트 | 리포트 이슈에서 후보를 체크하고 `@claude 체크한 항목을 이슈로 등록해` | 체크한 후보만 `source: scan` 이슈로 등록되고 리포트에 "S1 → #N" 댓글이 남는지 |
+| hook | 위 실행 로그 | `guard_bash.py`가 CI에서도 동작하는지(머지, 승인, `spec: approved` 차단) |
+

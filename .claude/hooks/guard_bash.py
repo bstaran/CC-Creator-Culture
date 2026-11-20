@@ -117,9 +117,34 @@ def check_pr_doc_review(argv: list[str]) -> None:
         block("문서 교정(/doc-review)을 거치지 않은 문서가 있다.\n" + result.stdout.strip())
 
 
+APPROVED_LABEL = "spec: approved"
+
+
+def label_values(argv: list[str]) -> list[str]:
+    values = []
+    for i, a in enumerate(argv):
+        for n in ("--add-label", "--label", "-l"):
+            if a == n and i + 1 < len(argv):
+                values += argv[i + 1].split(",")
+            elif a.startswith(n + "="):
+                values += a.split("=", 1)[1].split(",")
+    return [v.strip() for v in values]
+
+
 def check_gh(argv: list[str]) -> None:
     if argv[1:3] == ["pr", "create"]:
         check_pr_doc_review(argv)
+    if argv[1:3] == ["pr", "merge"]:
+        block("PR 머지는 사람이 한다.")
+    if argv[1:3] == ["pr", "review"] and any(a in ("--approve", "-a") for a in argv[3:]):
+        block("PR 승인은 사람이 한다. 리뷰 의견은 `--comment`로 남긴다.")
+    if len(argv) > 2 and argv[1] in ("issue", "pr") and argv[2] in ("create", "edit") \
+            and APPROVED_LABEL in label_values(argv):
+        block(f"`{APPROVED_LABEL}` 라벨은 사람만 붙인다(스펙 승인).")
+    if len(argv) > 1 and argv[1] == "api" and any(APPROVED_LABEL in a for a in argv[2:]):
+        block(f"`{APPROVED_LABEL}` 라벨은 사람만 붙인다(스펙 승인).")
+    if len(argv) > 1 and argv[1] == "api" and any(a.rstrip("/").endswith("/merge") for a in argv[2:]):
+        block("PR 머지는 사람이 한다.")
     if argv[1:3] == ["workflow", "run"]:
         block("GitHub 워크플로우 수동 실행(배포 포함)은 사람이 한다.")
     if len(argv) > 1 and argv[1] == "api" and any("/dispatches" in a for a in argv[2:]):

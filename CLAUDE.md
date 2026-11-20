@@ -101,7 +101,7 @@ PR 본문, 이슈 본문, `docs/`, 상태 파일처럼 사람이 읽는 글에 �
 
 `.claude/settings.json`의 hooks가 위 규칙 일부를 강제한다(스크립트: `.claude/hooks/`, python3 필요).
 
-- `guard_bash.py`: terraform plan/apply/destroy/state 등, 워크플로우 수동 실행, 클라우드 CLI 쓰기 명령(`aws`, `oci`는 조회만 허용), 이미지 push, `origin` 외 push, `dev`/`main` push, force push, `.env` 접근, `-x test`를 차단한다.
+- `guard_bash.py`: terraform plan/apply/destroy/state 등, 워크플로우 수동 실행, 클라우드 CLI 쓰기 명령(`aws`, `oci`는 조회만 허용), 이미지 push, `origin` 외 push, `dev`/`main` push, force push, `.env` 접근, `-x test`, PR 머지와 승인, `spec: approved` 라벨 부착을 차단한다.
 - `guard_files.py`: 비밀 값 파일(`.env`, `*.tfvars`, `backend.hcl`, `*.tfstate`) 읽기와 수정, 기존 Flyway 마이그레이션 수정을 차단한다.
 - `guard_bash.py`(PR 생성): `gh pr create`를 실행할 때 브랜치에서 바뀐 사람이 읽는 문서(`.claude/`, `CLAUDE.md` 제외)와 PR 본문(`--body-file`)에 `/doc-review` 교정 기록이 있는지 확인하고, 없으면 차단한다.
 - `verify_compile.py`(Stop): 커밋되지 않은 Java/Gradle 변경이 있으면 해당 모듈의 포맷 검사(`spotlessCheck`)와 컴파일을 실행하고, 실패하면 작업을 끝내지 못하게 한다. 같은 내용은 다시 실행하지 않는다. `CC_SKIP_VERIFY=1`로 끌 수 있다.
