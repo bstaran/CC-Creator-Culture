@@ -1,6 +1,8 @@
 package com.sub9.orderservice.order.application.service;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.groups.Tuple.tuple;
+import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyNoInteractions;
 import static org.mockito.Mockito.when;
@@ -102,6 +104,54 @@ class OrderExpirationTransactionServiceTest {
 
         assertThat(expirationService.expire(orderId, CREATED_AT)).isEmpty();
         verifyNoInteractions(couponUsagePort, outbox);
+    }
+
+    @Test
+    @DisplayName("여러 항목이 쓴 쿠폰은 중복을 뺀 처음 나온 순서로 한 번만 복구한다")
+    void expireOrderRestoresDistinctCouponsInFirstSeenOrder() {
+        UUID couponX = uuid(100);
+        UUID couponY = uuid(101);
+        Order order = order(50,
+                item(51, couponX),
+                item(52, null),
+                item(53, couponX),
+                item(54, couponY));
+        when(orderRepository.findByIdForUpdate(order.getId())).thenReturn(Optional.of(order));
+
+        expirationService.expire(order.getId(), order.getExpiresAt());
+
+        verify(couponUsagePort, times(1)).restore(order.getId(), List.of(couponX, couponY));
+    }
+
+    @Test
+    @DisplayName("재고 복구 명령은 주문 항목 순서 그대로 SKU와 수량을 담는다")
+    void expireOrderReturnsStockRestoreInItemOrder() {
+        Order order = order(60, item(61, null), item(62, null), item(63, null));
+        when(orderRepository.findByIdForUpdate(order.getId())).thenReturn(Optional.of(order));
+
+        var result = expirationService.expire(order.getId(), order.getExpiresAt());
+
+        assertThat(result).isPresent();
+        assertThat(result.orElseThrow().orderId()).isEqualTo(order.getId());
+        assertThat(result.orElseThrow().items())
+                .extracting(stockItem -> stockItem.skuId(), stockItem -> stockItem.quantity())
+                .containsExactly(
+                        tuple(uuid(61 + 3_000), 2),
+                        tuple(uuid(62 + 3_000), 2),
+                        tuple(uuid(63 + 3_000), 2));
+    }
+
+    @Test
+    @DisplayName("쿠폰을 쓰지 않은 주문을 만료하면 쿠폰 복구를 호출하지 않는다")
+    void expireOrderWithoutCouponsSkipsCouponRestore() {
+        Order order = order(70, item(71, null), item(72, null));
+        when(orderRepository.findByIdForUpdate(order.getId())).thenReturn(Optional.of(order));
+
+        var result = expirationService.expire(order.getId(), order.getExpiresAt());
+
+        assertThat(result).isPresent();
+        assertThat(order.getStatus()).isEqualTo(OrderStatus.EXPIRED);
+        verifyNoInteractions(couponUsagePort);
     }
 
     private static Order order(long sequence, OrderItem... items) {
