@@ -3,7 +3,6 @@ package com.sub9.orderservice.order.application.service;
 import static com.sub9.orderservice.order.application.port.output.StockPort.RestoreReason.ORDER_EXPIRED;
 
 import com.sub9.orderservice.order.application.port.output.CouponUsagePort;
-import com.sub9.orderservice.order.application.port.output.StockPort.StockItem;
 import com.sub9.orderservice.order.application.port.output.StockRestoreCommand;
 import com.sub9.orderservice.order.domain.model.Order;
 import com.sub9.orderservice.order.domain.repository.OrderRepository;
@@ -39,25 +38,13 @@ public class OrderExpirationTransactionService {
         outbox.write(KafkaTopics.ORDER_NOTIFICATION, order.getId().toString(), new OrderNotificationEvent(
                 uuidGenerator.generate(), "PAYMENT_FAILED", "ORDER_SERVICE", "ORDER", order.getId(),
                 order.getCustomerId(), order.getOrderNumber().toString(), "EXPIRED", null, now));
-        return Optional.of(new StockRestoreCommand(orderId, stockItems(order), ORDER_EXPIRED));
+        return Optional.of(StockRestoreCommand.of(order, ORDER_EXPIRED));
     }
 
     private void restoreCoupons(Order order) {
-        List<UUID> userCouponIds = order.getItems().stream()
-                .map(item -> item.getUserCouponId())
-                .filter(id -> id != null)
-                .distinct()
-                .toList();
+        List<UUID> userCouponIds = order.usedUserCouponIds();
         if (!userCouponIds.isEmpty()) {
             couponUsagePort.restore(order.getId(), userCouponIds);
         }
-    }
-
-    private static List<StockItem> stockItems(Order order) {
-        return order.getItems().stream()
-                .map(item -> new StockItem(
-                        item.getSkuId(),
-                        item.getProductSnapshot().getQuantity()))
-                .toList();
     }
 }
