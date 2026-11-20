@@ -25,7 +25,7 @@ scripts/ai/tf-check.sh                    # 바뀐 스택(fmt, init -backend=fal
 python3 .github/scripts/<바뀐 스크립트>_test.py   # 또는 bash ..._test.sh
 docker run --rm -v "$PWD":/repo -w /repo rhysd/actionlint:1.7.7 -color   # 워크플로우를 바꾼 경우
 ```
-- Terraform도 Docker도 없으면 `tf-check.sh`는 건너뛰고(종료 코드 3), PR에서 CI(`ci-aws.yml`) 결과를 확인한다.
+- Terraform과 Docker가 모두 없으면 `tf-check.sh`는 건너뛰고(종료 코드 3), PR에서 CI(`ci-aws.yml`) 결과를 확인한다.
 
 ### 리뷰
 - `infra-reviewer`는 필수다. 보안 관련 변경(권한, 네트워크, 비밀 값)은 `/security-review`도 실행한다.

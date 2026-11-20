@@ -45,7 +45,7 @@ flowchart LR
 | 스킬 | 작업 종류별 절차를 실행하는 명령(`/triage`, `/bugfix` 등) | `.claude/skills/` |
 | 에이전트 | 일을 나눠 맡는 AI. 탐색(Haiku), 테스트 작성과 구현(Sonnet), 리뷰(Opus) | `.claude/agents/` |
 | 안전장치(hook) | AI가 하면 안 되는 명령을 실행 직전에 막고, 작업을 끝낼 때 컴파일을 확인한다 | `.claude/hooks/` |
-| 다른 모델 교차 확인 | Gemini(Antigravity CLI)로 문서 문장 교정과 코드 2차 리뷰. 로컬에서만 동작한다 | `scripts/ai/doc-review.py`, `code-review.py` |
+| 다른 모델 교차 확인 | Gemini(Antigravity CLI)로 문서 문장을 교정하고 코드를 2차 리뷰한다. 로컬에서만 동작한다 | `scripts/ai/doc-review.py`, `code-review.py` |
 | 계층 규칙 검사 | `application`이 `presentation`에 의존하는 등 새 위반이 생기면 테스트가 실패한다. 기존 위반 34개 클래스는 동결해 두었다 | 서비스별 `LayerArchitectureTest` |
 | 자동화 | 매주 지표와 바뀐 코드 점검 결과를 리포트 이슈로 남기고, 이슈에서 `@claude`를 부르면 분류부터 시작한다 | `.github/workflows/ai-weekly.yml`, `claude.yml` |
 | 절차서 | 그룹별 상세 절차와 운영 절차 | `docs/ai-system/playbooks/` |
