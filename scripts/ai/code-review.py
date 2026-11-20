@@ -38,6 +38,7 @@ DEFAULT_MODEL = "gemini-4-neon-high"
 DEFAULT_BASE = "dev"
 RETRY_WAIT_SECONDS = 20
 BATCH_LINES = 600        # 한 번 호출에 보내는 최대 diff 줄 수
+BATCH_BYTES = 90_000     # 묶음 하나의 최대 바이트. 프롬프트를 `agy -p` 인자 하나로 넘기므로 Linux 인자 한도(128KiB)보다 작게 둔다
 WORKERS = 3
 MAX_FINDINGS = 15
 
@@ -71,6 +72,14 @@ class FileDiff:
 HUNK_RE = re.compile(r"^@@ -\d+(?:,\d+)? \+(\d+)(?:,\d+)? @@")
 
 
+def unquote_path(path: str) -> str:
+    """git이 따옴표와 8진 이스케이프로 감싼 경로(비ASCII 등)를 원래 문자열로 되돌린다."""
+    if len(path) >= 2 and path[0] == '"' and path[-1] == '"':
+        raw = path[1:-1].encode("latin-1", "backslashreplace").decode("unicode_escape")
+        path = raw.encode("latin-1").decode("utf-8", "replace")
+    return path
+
+
 def parse_diff(text: str) -> list[FileDiff]:
     files: list[FileDiff] = []
     cur: FileDiff | None = None
@@ -78,8 +87,8 @@ def parse_diff(text: str) -> list[FileDiff]:
     new_no = 0
     for line in text.split("\n"):
         if line.startswith("diff --git "):
-            m = re.match(r"diff --git a/(.*) b/(.*)$", line)
-            cur = FileDiff(path=m.group(2) if m else line.split(" b/")[-1])
+            m = re.match(r'diff --git "?a/(.*?)"? "?b/(.*?)"?$', line)
+            cur = FileDiff(path=unquote_path(f'"{m.group(2)}"') if m and '"' in line else (m.group(2) if m else line.split(" b/")[-1]))
             files.append(cur)
             hunk = None
             continue
@@ -91,7 +100,7 @@ def parse_diff(text: str) -> list[FileDiff]:
             elif line.startswith("Binary files") or line.startswith("GIT binary patch"):
                 cur.binary = True
             elif line.startswith("+++ "):
-                target = line[4:]
+                target = unquote_path(line[4:])
                 if target != "/dev/null":
                     cur.path = target[2:] if target.startswith("b/") else target
             elif line.startswith("--- "):
@@ -129,29 +138,51 @@ def render_hunk(h: Hunk) -> list[str]:
     return out
 
 
-def make_batches(files: list[FileDiff], limit: int = BATCH_LINES) -> list[list[tuple[str, list[str]]]]:
-    """(파일 경로, 렌더링한 줄) 조각을 limit 줄 단위로 묶는다. 큰 파일은 hunk 단위로 나눈다."""
+def split_lines(lines: list[str], limit: int, max_bytes: int) -> list[list[str]]:
+    """줄 목록을 limit 줄, max_bytes 바이트를 넘지 않는 조각으로 나눈다. 나뉜 조각 앞에는 이어지는 표시를 붙인다."""
+    chunks, cur, size = [], [], 0
+    for line in lines:
+        n = len(line.encode("utf-8")) + 1
+        if cur and (len(cur) >= limit or size + n > max_bytes):
+            chunks.append(cur)
+            cur, size = ["@@ (앞 조각에서 이어짐) @@"], 0
+        cur.append(line[: max_bytes // 2])   # 비정상적으로 긴 한 줄(압축된 파일 등)은 자른다
+        size += n
+    if cur:
+        chunks.append(cur)
+    return chunks
+
+
+def make_batches(files: list[FileDiff], limit: int = BATCH_LINES,
+                 max_bytes: int = BATCH_BYTES) -> list[list[tuple[str, list[str]]]]:
+    """(파일 경로, 렌더링한 줄) 조각을 limit 줄, max_bytes 바이트 단위로 묶는다. 큰 파일은 hunk 단위로,
+    큰 hunk는 줄 단위로 나눈다."""
     pieces: list[tuple[str, list[str]]] = []
     for f in files:
         chunk: list[str] = []
         for h in f.hunks:
-            rendered = render_hunk(h)
-            if chunk and len(chunk) + len(rendered) > limit:
-                pieces.append((f.path, chunk))
-                chunk = []
-            chunk.extend(rendered)
+            for rendered in split_lines(render_hunk(h), limit, max_bytes):
+                if chunk and (len(chunk) + len(rendered) > limit or nbytes(chunk) + nbytes(rendered) > max_bytes):
+                    pieces.append((f.path, chunk))
+                    chunk = []
+                chunk.extend(rendered)
         if chunk:
             pieces.append((f.path, chunk))
-    batches, cur, size = [], [], 0
+    batches, cur, size, used = [], [], 0, 0
     for path, lines in pieces:
-        if cur and size + len(lines) > limit:
+        if cur and (size + len(lines) > limit or used + nbytes(lines) > max_bytes):
             batches.append(cur)
-            cur, size = [], 0
+            cur, size, used = [], 0, 0
         cur.append((path, lines))
         size += len(lines)
+        used += nbytes(lines)
     if cur:
         batches.append(cur)
     return batches
+
+
+def nbytes(lines: list[str]) -> int:
+    return sum(len(l.encode("utf-8")) + 1 for l in lines)
 
 
 # ---------- git / gh ----------
@@ -170,7 +201,10 @@ def resolve_base(base: str) -> str:
 
 def origin_repo() -> str:
     url = run(["git", "remote", "get-url", "origin"]).strip()
-    return re.sub(r"(git@github\.com:|https://github\.com/)", "", url).removesuffix(".git")
+    m = re.search(r"github\.com[:/]([^/]+/[^/]+?)(?:\.git)?/?$", url)
+    if not m:
+        raise RuntimeError(f"origin이 GitHub 저장소가 아니다: {url}. --repo로 지정한다.")
+    return m.group(1)
 
 
 # ---------- 모델 호출 ----------
@@ -190,7 +224,8 @@ def build_prompt(batch: list[tuple[str, list[str]]]) -> str:
 def extract_json(text: str) -> dict:
     text = text.strip()
     if text.startswith("```"):
-        text = text.split("\n", 1)[1].rsplit("```", 1)[0]
+        text = text.split("\n", 1)[1] if "\n" in text else text[3:]
+        text = text.rsplit("```", 1)[0]
     start, end = text.find("{"), text.rfind("}")
     if start < 0 or end < start:
         raise ValueError("JSON 객체가 없다")
@@ -205,21 +240,31 @@ def call_agy(prompt: str, model: str, timeout: int, cwd: str) -> dict:
         proc = subprocess.run(cmd, capture_output=True, text=True, timeout=timeout + 30, cwd=cwd)
     except subprocess.TimeoutExpired:
         return {"status": "timeout", "seconds": round(time.time() - started)}
+    except OSError as e:   # 인자가 너무 긴 경우(E2BIG) 등. 이 묶음만 실패로 두고 나머지는 계속한다
+        return {"status": "error", "seconds": round(time.time() - started), "error": str(e)[:300]}
     seconds = round(time.time() - started)
     try:
         out = json.loads(proc.stdout)
     except json.JSONDecodeError:
         return {"status": "error", "seconds": seconds, "error": (proc.stderr or proc.stdout)[-500:]}
-    if out.get("status") != "SUCCESS":
+    if not isinstance(out, dict) or out.get("status") != "SUCCESS":
         return {"status": "error", "seconds": seconds, "error": str(out)[-500:]}
-    response = out.get("response")
+    return parse_response(out.get("response"), out.get("usage"), seconds)
+
+
+def parse_response(response, usage, seconds: int = 0) -> dict:
+    """모델 응답에서 지적 목록을 꺼낸다. 형식이 어긋나면 unparsed로 돌려준다."""
     try:
         data = extract_json(response) if isinstance(response, str) else response
-        findings, summary = data.get("findings", []), data.get("summary", "")
-    except (json.JSONDecodeError, AttributeError, ValueError):
+    except (json.JSONDecodeError, ValueError):
+        data = None
+    findings = data.get("findings") if isinstance(data, dict) else None
+    if not isinstance(findings, list):
         return {"status": "unparsed", "seconds": seconds, "raw": str(response)[:2000]}
-    return {"status": "ok", "seconds": seconds, "usage": out.get("usage", {}), "findings": findings,
-            "summary": summary}
+    summary = data.get("summary")
+    return {"status": "ok", "seconds": seconds, "usage": usage if isinstance(usage, dict) else {},
+            "findings": [f for f in findings if isinstance(f, dict)],
+            "summary": summary if isinstance(summary, str) else ""}
 
 
 def review_batch(batch, model, timeout, cwd) -> dict:
@@ -259,13 +304,16 @@ def classify(f: dict, diffs: dict[str, FileDiff], root: str) -> tuple[str, dict 
         "file": path, "line": line, "severity": severity, "confidence": confidence,
         "category": clean_text(f.get("category")) or "other", "title": clean_text(f.get("title")),
         "reason": clean_text(f.get("reason")), "suggestion": clean_text(f.get("suggestion")),
-        "evidence": [clean_text(e) for e in f.get("evidence", []) or []][:5],
+        "evidence": [clean_text(e) for e in f.get("evidence")][:5] if isinstance(f.get("evidence"), list) else [],
     }
     if not item["title"]:
         return "bad-location", None
     if path in diffs and line in diffs[path].commentable():
         return "inline", item
-    full = os.path.join(root, path)
+    real_root = os.path.realpath(root)
+    full = os.path.realpath(os.path.join(root, path))
+    if os.path.isabs(path) or os.path.commonpath([real_root, full]) != real_root:
+        return "bad-location", None   # 저장소 밖 파일은 열지 않는다
     if os.path.isfile(full):
         with open(full, encoding="utf-8", errors="replace") as fh:
             count = sum(1 for _ in fh)
@@ -319,6 +367,9 @@ def review_payload(result: dict, drop: set[int], inline: bool = True) -> dict:
     ]
     if result.get("summaries"):
         lines += ["", "요약: " + " ".join(result["summaries"])]
+    failed = sorted({f for e in result.get("errors", []) for f in e.get("files", [])})
+    if failed:
+        lines += ["", f"**일부 묶음이 실패해 다음 파일은 리뷰하지 못했다**: " + ", ".join(f"`{f}`" for f in failed)]
     outside = [i for i in items if not (inline and i["inline"])]
     if outside:
         lines += ["", "#### 줄에 달지 못한 지적" if inline else "#### 지적"]
@@ -332,6 +383,9 @@ def review_payload(result: dict, drop: set[int], inline: bool = True) -> dict:
 
 
 def post_review(result: dict, repo: str, pr: int, drop: set[int]) -> int:
+    if result.get("status") not in ("ok", "partial"):
+        print(f"리뷰가 끝나지 않은 결과(status={result.get('status')})는 게시하지 않는다.", file=sys.stderr)
+        return 1
     head = run(["gh", "pr", "view", str(pr), "--repo", repo, "--json", "headRefOid", "-q", ".headRefOid"]).strip()
     if head != result["head"]:
         print(f"PR head({head[:7]})가 리뷰한 커밋({result['head'][:7]})과 다르다. 다시 리뷰한 뒤 게시한다.", file=sys.stderr)
@@ -384,7 +438,12 @@ def main() -> int:
     parser.add_argument("--post-from", help="저장한 결과 JSON을 --pr에 리뷰로 게시")
     parser.add_argument("--drop", default="", help="게시에서 뺄 지적 id(쉼표 구분)")
     args = parser.parse_args()
-    args.repo = args.repo or origin_repo()
+    if (args.pr is not None or args.post_from) and not args.repo:   # 현재 브랜치 리뷰에는 저장소 이름이 필요 없다
+        try:
+            args.repo = origin_repo()
+        except RuntimeError as e:
+            print(e, file=sys.stderr)
+            return 2
 
     if args.post_from:
         if args.pr is None:
@@ -405,7 +464,8 @@ def main() -> int:
         return 2
     try:
         if args.pr is None:
-            diff_text = run(["git", "diff", "--no-color", "--no-ext-diff", "-U3", "-M", f"{base}...{head}"], cwd=root)
+            diff_text = run(["git", "-c", "core.quotepath=false", "diff", "--no-color", "--no-ext-diff", "-U3", "-M",
+                             f"{base}...{head}"], cwd=root)
         else:   # 머지된 PR도 같은 diff가 나오도록 GitHub가 계산한 PR diff를 쓴다
             diff_text = run(["gh", "pr", "diff", str(args.pr), "--repo", args.repo, "--color", "never"])
         diffs = [f for f in parse_diff(diff_text) if is_review_target(f)]

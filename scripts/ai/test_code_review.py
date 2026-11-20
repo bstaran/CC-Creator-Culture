@@ -199,5 +199,59 @@ class PayloadTest(unittest.TestCase):
         self.assertIn("본문 지적", p["body"])
 
 
+
+class RobustnessTest(unittest.TestCase):
+    def test_extractJsonHandlesFencesAndProse(self):
+        self.assertEqual(cr.extract_json('{"a": 1}'), {"a": 1})
+        self.assertEqual(cr.extract_json('```json\n{"a": 1}\n```'), {"a": 1})
+        self.assertEqual(cr.extract_json('결과입니다.\n{"a": 1}\n끝'), {"a": 1})
+        self.assertEqual(cr.extract_json('```{"a": 1}```'), {"a": 1})
+        with self.assertRaises(ValueError):
+            cr.extract_json("```")
+
+    def test_parseResponseRejectsWrongShapes(self):
+        for response in ["없음", '{"findings": null}', '{"findings": "x"}', ["x"]]:
+            self.assertEqual(cr.parse_response(response, {})["status"], "unparsed", response)
+        r = cr.parse_response('{"findings": [{"file": "a"}, "x", 1], "summary": 3}', None)
+        self.assertEqual((r["status"], r["findings"], r["summary"], r["usage"]), ("ok", [{"file": "a"}], "", {}))
+
+    def test_largeHunkIsSplitByLinesAndBytes(self):
+        hunk = cr.Hunk(header="@@ -0,0 +1,300 @@", lines=[("+", n, "가" * 100) for n in range(1, 301)])
+        f = cr.FileDiff(path="apps/Big.java", hunks=[hunk])
+        batches = cr.make_batches([f], limit=1000, max_bytes=20_000)
+        self.assertGreater(len(batches), 1)
+        for b in batches:
+            self.assertLessEqual(cr.nbytes([l for _, lines in b for l in lines]), 20_000)
+        self.assertTrue(batches[1][0][1][0].startswith("@@ (앞 조각에서 이어짐)"))
+
+    def test_quotedNonAsciiPathIsDecoded(self):
+        diff = ('diff --git "a/docs/\\355\\225\\234.java" "b/docs/\\355\\225\\234.java"\n'
+                '--- "a/docs/\\355\\225\\234.java"\n+++ "b/docs/\\355\\225\\234.java"\n@@ -1 +1 @@\n-a\n+b\n')
+        self.assertEqual(cr.parse_diff(diff)[0].path, "docs/한.java")
+
+    def test_pathOutsideRepositoryIsDropped(self):
+        with tempfile.TemporaryDirectory() as root:
+            raw = [{"file": "/etc/hostname", "line": 1, "title": "t"}, {"file": "../../etc/hostname", "line": 1, "title": "t"}]
+            kept, filtered = cr.select(raw, {}, root)
+            self.assertEqual((kept, filtered), ([], {"bad-location": 2}))
+
+    def test_failedBatchesAreShownAndErrorResultIsNotPosted(self):
+        result = {"model": "m", "head": "abc", "files": ["a.java", "b.java"], "findings": [], "status": "partial",
+                  "errors": [{"files": ["b.java"], "status": "timeout"}]}
+        self.assertIn("`b.java`", cr.review_payload(result, set())["body"])
+        self.assertEqual(cr.post_review(dict(result, status="error"), "o/r", 1, set()), 1)
+
+    def test_originUrlFormats(self):
+        urls = ["git@github.com:o/r.git", "https://github.com/o/r", "ssh://git@github.com/o/r.git",
+                "https://user@github.com/o/r.git"]
+        for url in urls:
+            orig = cr.run
+            cr.run = lambda *a, **k: url + "\n"
+            try:
+                self.assertEqual(cr.origin_repo(), "o/r", url)
+            finally:
+                cr.run = orig
+
+
 if __name__ == "__main__":
     unittest.main(verbosity=1)
