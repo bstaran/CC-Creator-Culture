@@ -27,5 +27,10 @@ create "type: perf"     "f9a03f" "C 그룹: 성능(k6 기준선 비교)"
 create "source: ad-hoc" "c5def5" "개인 요청(로컬 세션, AI 작업 요청 이슈)"
 create "source: scan"   "bfdadc" "정기 스캔에서 발견"
 
+# 영역, 작성 주체, 리포트
+create "area: ai-system" "0052cc" "AI 작업 체계(스킬, 에이전트, hooks, 절차) 변경"
+create "ai: generated"   "d4c5f9" "AI가 만든 PR(주간 지표의 무수정 승인율 계산)"
+create "report: weekly"  "c2e0c6" "주간 리포트(지표, 정기 스캔 후보)"
+
 # 진행 상태
 create "spec: approved" "0e8a16" "B 트랙 스펙 승인 완료, 구현 시작 가능"
