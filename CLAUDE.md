@@ -79,7 +79,7 @@ scripts/ai/stack-up.sh && scripts/ai/smoke-gateway.sh; scripts/ai/stack-down.sh 
 - 브랜치: `feature/`, `fix/`, `refactor/`, `chore/`, `docs/` 접두사를 쓴다. PR 대상은 `dev`다.
 - 커밋: `type(scope): 한국어 요약` 형식이다(예: `fix(order): 내부 API 인증 헤더 검사 제외`). scope는 모듈이나 도메인(`order`, `product`, `user`, `common`, `infra`, `ci`, `config`)을 쓴다.
 - PR 본문은 `.github/pull_request_template.md` 양식을 채운다. 테스트 항목에는 실제 실행한 명령과 결과를 적는다.
-- PR 라벨: 연결된 이슈의 트랙 라벨(`type: ...`)을 그대로 붙인다. AI 작업 체계(스킬, 에이전트, hooks, 절차) 변경에는 `area: ai-system`을 붙인다.
+- PR 라벨: 연결된 이슈의 트랙 라벨(`type: ...`)을 그대로 붙인다. AI 작업 체계(스킬, 에이전트, hooks, 절차) 변경에는 `area: ai-system`을 붙인다. AI가 만든 PR에는 `ai: generated`를 함께 붙인다.
 
 ## 금지
 
@@ -97,4 +97,4 @@ scripts/ai/stack-up.sh && scripts/ai/smoke-gateway.sh; scripts/ai/stack-down.sh 
 - `guard_bash.py`(PR 생성): `gh pr create`를 실행할 때 브랜치에서 바뀐 사람이 읽는 문서(`.claude/`, `CLAUDE.md` 제외)와 PR 본문(`--body-file`)에 `/doc-review` 교정 기록이 있는지 확인하고, 없으면 차단한다.
 - `verify_compile.py`(Stop): 커밋되지 않은 Java/Gradle 변경이 있으면 해당 모듈의 포맷 검사(`spotlessCheck`)와 컴파일을 실행하고, 실패하면 작업을 끝내지 못하게 한다. 같은 내용은 다시 실행하지 않는다. `CC_SKIP_VERIFY=1`로 끌 수 있다.
 
-hook을 고치면 `python3 .claude/hooks/test_guards.py`(차단/허용 회귀 테스트)를 실행한다. 문서 교정 스크립트를 고치면 `python3 scripts/ai/test_doc_review.py`를 실행한다. hook이 차단하면 우회하지 말고 사유를 사용자에게 보고한다.
+hook을 고치면 `python3 .claude/hooks/test_guards.py`(차단/허용 회귀 테스트)를 실행한다. 문서 교정 스크립트를 고치면 `python3 scripts/ai/test_doc_review.py`, 주간 지표 스크립트를 고치면 `python3 scripts/ai/test_weekly_metrics.py`를 실행한다. hook이 차단하면 우회하지 말고 사유를 사용자에게 보고한다.

@@ -1,0 +1,170 @@
+name: AI Weekly Report
+
+# 매주 월요일 09:00(KST)에 주간 지표를 모으고, 지난 7일 동안 바뀐 코드를 정기 스캔(/refactor-audit 주간 모드)해
+# "주간 리포트" 이슈 하나로 남긴다. 개별 이슈 후보는 등록하지 않는다.
+# 사람이 리포트에서 등록할 항목을 체크하고 댓글로 `@claude 체크한 항목을 이슈로 등록해`라고 요청한다(claude.yml).
+# 바뀐 코드가 없거나 스캔이 실패해도 지표만으로 리포트를 만든다.
+on:
+  schedule:
+    - cron: "0 0 * * 1"
+  workflow_dispatch:
+    inputs:
+      days:
+        description: 스캔과 지표의 기간(일)
+        required: false
+        default: "7"
+      scan:
+        description: 정기 스캔(Claude) 실행
+        required: false
+        type: boolean
+        default: true
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ai-weekly
+  cancel-in-progress: false
+
+env:
+  DAYS: ${{ inputs.days || '7' }}
+
+jobs:
+  metrics:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    permissions:
+      contents: read
+      issues: read
+      pull-requests: read
+    outputs:
+      changed: ${{ steps.changed.outputs.count }}
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v6
+        with:
+          ref: dev
+          fetch-depth: 0
+
+      # 기간은 어제까지 DAYS일(양 끝 포함)이다. 매주 실행하면 기간이 겹치거나 빠지지 않는다.
+      - name: Set period
+        run: |
+          [[ "$DAYS" =~ ^[1-9][0-9]*$ ]] || { echo "days는 양의 정수여야 한다: $DAYS"; exit 1; }
+          until=$(date -u -d yesterday +%F)
+          echo "SINCE=$(date -u -d "$until - $((DAYS - 1)) days" +%F)" >> "$GITHUB_ENV"
+          echo "UNTIL=$until" >> "$GITHUB_ENV"
+
+      - name: Collect metrics
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          python3 scripts/ai/weekly-metrics.py --repo "$GITHUB_REPOSITORY" --since "$SINCE" --until "$UNTIL" > metrics.md
+          cat metrics.md >> "$GITHUB_STEP_SUMMARY"
+
+      - name: List changed source files
+        id: changed
+        run: |
+          git log --since="${SINCE}T00:00:00Z" --until="${UNTIL}T23:59:59Z" --name-only --format= origin/dev \
+            -- apps libs infra/gateway \
+            | grep -E '\.(java|lua|ya?ml|sql|kts?|gradle)$' | sort -u > changed.txt || true
+          echo "count=$(wc -l < changed.txt)" >> "$GITHUB_OUTPUT"
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: weekly-metrics
+          path: |
+            metrics.md
+            changed.txt
+          retention-days: 7
+
+  scan:
+    needs: metrics
+    if: needs.metrics.outputs.changed != '0' && (github.event_name == 'schedule' || inputs.scan)
+    runs-on: ubuntu-latest
+    timeout-minutes: 40
+    # id-token을 주지 않고 github_token을 넘겨, Claude GitHub App 토큰(설치 권한, 쓰기 포함) 대신
+    # 이 job의 읽기 전용 GITHUB_TOKEN만 쓰게 한다.
+    permissions:
+      contents: read
+      issues: read
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v6
+        with:
+          ref: dev
+          fetch-depth: 0
+          persist-credentials: false
+
+      - uses: actions/download-artifact@v4
+        with:
+          name: weekly-metrics
+          path: .ai-cache/weekly
+
+      - name: Run weekly scan
+        uses: anthropics/claude-code-action@v1
+        env:
+          GH_TOKEN: ${{ github.token }}
+        with:
+          claude_code_oauth_token: ${{ secrets.CLAUDE_CODE_OAUTH_TOKEN }}
+          github_token: ${{ github.token }}
+          prompt: |
+            /refactor-audit --weekly .ai-cache/weekly/changed.txt
+
+            결과는 `.ai-cache/weekly/scan.md`에 쓴다. 이슈를 만들거나 코드를 고치지 않는다.
+          # 체크아웃한 .claude/settings.json의 허용 목록(gradlew, terraform, python3 등)이 더해지지 않도록
+          # 이 job에 필요 없는 명령과 자격 증명이 있는 경로는 거부 목록으로 막는다(거부가 허용보다 우선).
+          claude_args: |
+            --allowedTools "Skill,Read,Grep,Glob,Task,Agent,Write(./.ai-cache/weekly/**),Bash(git log *),Bash(git diff *),Bash(git show *),Bash(gh issue list *),Bash(gh issue view *)"
+            --disallowedTools "Edit,NotebookEdit,WebFetch,WebSearch,Bash(./gradlew *),Bash(gradle *),Bash(terraform *),Bash(python3 *),Bash(python *),Bash(bash *),Bash(sh *),Bash(gh pr *),Bash(gh api *),Bash(gh issue create *),Bash(gh issue comment *),Bash(gh issue edit *),Bash(git push *),Bash(git commit *),Bash(git config *),Bash(git branch *),Bash(curl *),Bash(env *),Bash(printenv *),Read(./.git/**),Read(//proc/**),Read(~/.claude/**)"
+            --append-system-prompt "모든 출력은 한국어로 작성한다. 비대화형 실행이므로 사용자에게 묻지 않고 skill의 주간 모드 지침대로 끝까지 진행한다."
+
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: weekly-scan
+          path: .ai-cache/weekly/scan.md
+          if-no-files-found: ignore
+          retention-days: 7
+
+  report:
+    needs: [metrics, scan]
+    if: always() && needs.metrics.result == 'success'
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    permissions:
+      issues: write
+    steps:
+      - uses: actions/download-artifact@v4
+        with:
+          name: weekly-metrics
+      - uses: actions/download-artifact@v4
+        if: needs.scan.result == 'success'
+        continue-on-error: true
+        with:
+          name: weekly-scan
+
+      - name: Create report issue
+        env:
+          GH_TOKEN: ${{ github.token }}
+          SCAN_RESULT: ${{ needs.scan.result }}
+          CHANGED: ${{ needs.metrics.outputs.changed }}
+        run: |
+          {
+            echo "자동 생성된 주간 리포트다. 등록할 항목을 체크한 뒤 댓글로 \`@claude 체크한 항목을 이슈로 등록해\`라고 요청한다."
+            echo
+            cat metrics.md
+            echo
+            if [ -s scan.md ]; then
+              cat scan.md
+            elif [ "$CHANGED" = "0" ]; then
+              echo "## 정기 스캔"; echo; echo "기간 안에 바뀐 소스 파일이 없어 스캔하지 않았다."
+            elif [ "$SCAN_RESULT" = "skipped" ]; then
+              echo "## 정기 스캔"; echo; echo "스캔을 끄고 수동 실행했다."
+            else
+              echo "## 정기 스캔"; echo; echo "스캔 결과가 없다(작업 결과: ${SCAN_RESULT}). 실행 로그를 확인한다."
+            fi
+            echo
+            echo "[실행 기록](${GITHUB_SERVER_URL}/${GITHUB_REPOSITORY}/actions/runs/${GITHUB_RUN_ID})"
+          } > body.md
+          gh issue create --repo "$GITHUB_REPOSITORY" --title "[주간 리포트] $(date -u +%F)" \
+            --label "report: weekly" --body-file body.md

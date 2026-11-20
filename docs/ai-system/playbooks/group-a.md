@@ -66,10 +66,10 @@ PR을 만들기 직전에 `/doc-review`를 한 번 실행해, 이번 브랜치�
 
 ```bash
 git push -u origin <브랜치>
-gh pr create --repo <origin 저장소> --base dev --title "<type>(<scope>): <요약>" --body-file <본문 파일> --label "<이슈의 트랙 라벨>"
+gh pr create --repo <origin 저장소> --base dev --title "<type>(<scope>): <요약>" --body-file <본문 파일> --label "<이슈의 트랙 라벨>" --label "ai: generated"
 ```
 
-- 라벨: 연결된 이슈의 트랙 라벨(`type: bug`, `type: refactor`, `type: feature`, `type: infra`, `type: perf`)을 그대로 붙인다. AI 작업 체계 자체를 바꾸는 PR에는 `area: ai-system`을 붙인다.
+- 라벨: 연결된 이슈의 트랙 라벨(`type: bug`, `type: refactor`, `type: feature`, `type: infra`, `type: perf`)을 그대로 붙인다. AI 작업 체계 자체를 바꾸는 PR에는 `area: ai-system`을 붙인다. AI가 만든 PR에는 모두 `ai: generated`를 붙인다(주간 지표의 무수정 승인율 계산에 쓴다).
 - 본문은 `.github/pull_request_template.md` 양식을 따른다. "테스트 결과"에는 실제 실행한 명령과 결과(통과 수, 건너뜀 수)를 적고, 버그 수정이면 수정 전 실패 메시지도 함께 적는다. "관련 이슈"에는 `Closes #<번호>`를 적는다.
 - 리뷰 회차별 결과(판정, 차단 지적과 조치)를 참고사항에 요약한다.
 - 머지는 하지 않는다. PR 링크를 보고하고 상태 파일을 "PR 열림"으로 갱신한다.
