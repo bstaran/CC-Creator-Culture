@@ -408,6 +408,7 @@ flowchart LR
 | 3. 그룹 B | 완료(`/spec`, `/feature`, schema-reviewer, 이벤트 스키마 스냅샷, `stack-up.sh`, `smoke-gateway.sh`) | 대기 |
 | 4. 그룹 C | 완료(`/infra-change`, `/perf-check`, infra-reviewer, `tf-check.sh`, `perf-compare.py`, hooks 차단 확장) | 대기 |
 | 공통 | `/doc-review`(다른 모델로 문서 문장 교정, PR 전 교정 확인) | 완료(PR #10 문서로 실제 실행, 묶음 방식으로 재설계) |
+| 공통 | `/gemini-review`(다른 모델로 코드 2차 리뷰, PR 코멘트 게시) | 완료(PR #9와 버그를 심은 브랜치로 실행) |
 | 5. 운영 | 완료(주간 리포트 워크플로우 `ai-weekly.yml`, `weekly-metrics.py`, `/refactor-audit` 주간 모드, 운영 절차 `playbooks/operations.md`) | 지표 수집은 로컬에서 확인. 정기 스캔은 CI 토큰 복구 후 첫 실행으로 확인 |
 | CI 연동 | 미착수(`claude.yml`에서 `/triage` 시작) | CI 토큰 복구 후 |
 
@@ -465,7 +466,8 @@ flowchart LR
 - **승인 담당**: 도메인별 머지 승인자와 B 트랙 스펙 승인자 지정(README의 도메인 담당자를 그대로 쓸지 여부)
 - **자동화 확대 기준**: 제안한 "유형별 최근 10건 무수정 승인, 회귀 0건" 기준을 채택할지 여부
 - ~~**ArchUnit 기존 위반 처리**~~ **결정(2026-11-18)**: 기존 위반은 baseline으로 동결하고, AI 작업 체계가 완성된 뒤 리팩토링 트랙으로 개선한다.
-- **CI 리뷰 모델**: 자동 리뷰는 Sonnet으로 하고, `@claude`로 요청할 때만 Opus를 쓸지 여부
+- **CI 리뷰 모델**: 자동 리뷰는 Sonnet으로 하고, `@claude`로 요청할 때만 Opus를 쓸지 여부. 아래 Gemini 리뷰와 둘 중 하나만 쓸지도 함께 정한다.
+- ~~**다른 모델 코드 리뷰**~~ **결정(2026-11-20)**: CI 토큰이 복구될 때까지 Claude CI 리뷰는 그대로 두고, 로컬에서 `/gemini-review`(`gemini-4-neon-high`)로 2차 리뷰를 한다. Antigravity는 개인 구독을 CI에서 쓰는 공식 방법이 없다(API 키나 Google Cloud 자격 증명만 지원). 공개 저장소에 self-hosted runner를 붙이는 방식은 보안 위험 때문에 쓰지 않는다. 파이프라인에서는 Claude 리뷰어를 통과한 뒤 PR 직전에 한 번 실행한다.
 - ~~**스키마 테스트 방식**~~ **결정(2026-11-19)**: 이벤트 직렬화 구조 스냅샷 테스트(`EventSchemaSnapshotTest`)로 시작한다. API 스키마는 컨트롤러 테스트로 고정한다.
 - ~~**C 트랙 격리 환경**~~ **결정(2026-11-19)**: 로컬 compose만 쓴다. AI에게는 클라우드 자격 증명을 주지 않고, plan은 사람이 CI에서 실행한다.
 - ~~**문서 교정 방식**~~ **결정(2026-11-19)**: 사람이 읽는 문서의 바뀐 부분만 묶어서 PR 직전에 한 번 `gemini-4-neon-high`로 교정한다. hydrogen은 명백한 오류만 잡고 서술어 누락, 의미 중복 같은 문제를 놓쳐서 쓰지 않는다. `agy`는 호출마다 고정 비용이 커서 호출 횟수를 줄이는 쪽으로 설계했다.

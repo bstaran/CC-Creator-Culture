@@ -1,0 +1,25 @@
+{
+  "type": "object",
+  "properties": {
+    "findings": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "properties": {
+          "file": { "type": "string", "description": "저장소 기준 파일 경로" },
+          "line": { "type": "integer", "description": "변경 후 파일의 줄 번호" },
+          "severity": { "type": "string", "enum": ["blocker", "major", "minor"] },
+          "category": { "type": "string", "enum": ["bug", "concurrency", "transaction", "event", "security", "performance", "layer", "test", "other"] },
+          "confidence": { "type": "string", "enum": ["high", "medium", "low"] },
+          "title": { "type": "string", "description": "한 줄 요약" },
+          "reason": { "type": "string", "description": "왜 문제인지(어떤 입력이나 상황에서 무엇이 잘못되는지)" },
+          "suggestion": { "type": "string", "description": "어떻게 고치면 되는지" },
+          "evidence": { "type": "array", "items": { "type": "string" }, "description": "근거로 확인한 위치(경로:줄)" }
+        },
+        "required": ["file", "line", "severity", "category", "confidence", "title", "reason", "suggestion"]
+      }
+    },
+    "summary": { "type": "string", "description": "전체 요약 1~3문장" }
+  },
+  "required": ["findings", "summary"]
+}
