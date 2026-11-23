@@ -1,7 +1,8 @@
 #!/usr/bin/env python3
-"""Stop 검증 hook: 커밋되지 않은 Java/Gradle 변경이 있으면 해당 모듈을 컴파일한다.
+"""Stop 검증 hook: 커밋되지 않은 Java/Gradle 변경이 있으면 해당 모듈의 포맷 검사와 컴파일을 실행한다.
 
-- 변경 파일을 Gradle 모듈로 묶어 `compileJava compileTestJava`만 실행한다(테스트는 작업 스킬에서 돌린다).
+- 변경 파일을 Gradle 모듈로 묶어 `spotlessCheck compileJava compileTestJava`만 실행한다(테스트는 작업 스킬에서 돌린다).
+- 세션 작업 디렉터리의 체크아웃만 본다. worktree(`.claude/worktrees/<n>`)의 변경은 작업 스킬이 직접 빌드해 확인한다.
 - 같은 변경 내용으로 이미 통과했다면 다시 돌리지 않는다(.git 안에 해시 저장).
 - 컴파일 실패 시 exit 2로 종료를 막고 오류를 Claude에게 돌려준다. 고친 뒤에도 실패하면 한 번만 더 막고, 그다음은 경고만 남긴다.
 - JDK가 없거나 CC_SKIP_VERIFY=1이면 건너뛴다.

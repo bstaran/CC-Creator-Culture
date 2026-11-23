@@ -56,7 +56,7 @@ git worktree add --no-track .claude/worktrees/<이슈번호> -b <refactor|fix>/<
 ## 6. 리뷰
 
 - 항상 `arch-reviewer`를 호출한다. Kafka 이벤트, outbox, 이벤트 소비자, Redis Lua, `/internal` API가 diff에 포함되면 `event-reviewer`도 병렬로 호출한다.
-- 리뷰어에게 넘기는 것: 트랙과 기준(이슈 번호, 기준 테스트 이름), `git diff origin/dev...HEAD` 전체, worktree 경로.
+- 리뷰어에게 넘기는 것: 트랙과 기준(이슈 번호, 기준 테스트 이름), worktree 경로, 그리고 `git diff origin/dev...HEAD`의 출력 내용 전체. 리뷰어는 git을 실행할 수 없으므로 명령이 아니라 출력 내용을 프롬프트에 붙인다.
 - "차단" 지적이 있으면 4단계로 돌아간다. **수정 요청은 최대 2회다**. 3회째에도 차단이 남으면 멈추고 사람에게 보고한다.
 - "권고"는 반영 여부를 오케스트레이터가 판단하고, 반영하지 않은 권고는 PR 본문 참고사항에 적는다.
 - Claude 리뷰어를 통과하면 `/gemini-review`(인자 없음)로 다른 모델의 2차 의견을 받는다. 타당한 `blocker`, `major` 지적은 고치고 5단계 검증을 다시 실행한다. Gemini 리뷰는 한 번만 실행하고, 판정 결과는 PR 본문 참고사항에 적는다. `agy`를 쓸 수 없으면 건너뛴다.

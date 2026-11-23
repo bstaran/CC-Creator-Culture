@@ -146,8 +146,25 @@ def run(script: str, payload: dict, skip_doc_check: bool = True) -> int:
                           capture_output=True, text=True, cwd=ROOT, env=env).returncode
 
 
+def cwd_push_cases() -> list:
+    """`cd <다른 체크아웃> && git push`는 그 체크아웃의 브랜치로 판정해야 한다(worktree에서 push하는 경우)."""
+    import atexit
+    import shutil
+    import tempfile
+    cases = []
+    for branch, expect in (("main", 2), ("feature/x", 0)):
+        repo = tempfile.mkdtemp(prefix="guard-cwd-")
+        atexit.register(shutil.rmtree, repo, True)
+        subprocess.run(["git", "init", "-q", "-b", branch, repo], check=True)
+        subprocess.run(["git", "-C", repo, "-c", "user.name=t", "-c", "user.email=t@t", "commit", "-q",
+                        "--allow-empty", "-m", "init"], check=True)   # 커밋이 있어야 브랜치 이름을 읽는다
+        cases.append((f"cd {repo} && git push", expect))
+    return cases
+
+
 def main() -> int:
     fails = 0
+    BASH_CASES.extend(cwd_push_cases())
     for cmd, expect in BASH_CASES:
         rc = run("guard_bash.py", {"tool_name": "Bash", "tool_input": {"command": cmd}})
         if rc != expect:

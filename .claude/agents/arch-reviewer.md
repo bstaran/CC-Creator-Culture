@@ -20,7 +20,7 @@ tools: Read, Grep, Glob
 
 ### 1. 계층 규칙
 - `domain`이 바깥 계층을 import하지 않는가?
-- `application`이 `presentation`이나 `infrastructure`를 새로 import하지 않는가? *(기존 위반 약 33개는 그대로 두되 늘리지 않는다.)*
+- `application`이 `presentation`이나 `infrastructure`를 새로 import하지 않는가? *(기존 위반은 서비스별 `src/test/resources/archunit_store`에 동결되어 있다. 그대로 두되 늘리지 않는다.)*
 - 포트 패키지 이름이 해당 도메인 관례(`in/out` 또는 `input/output`)를 따르는가?
 
 ### 2. 트랜잭션과 외부 호출
