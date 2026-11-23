@@ -1,7 +1,7 @@
 # CLAUDE.md
 
 크리에이터 커머스 MSA(`cc-service`). Java 21, Spring Boot 4.1.1, Spring Cloud 2025.1.2, Gradle 멀티모듈 프로젝트다.
-전체 구조와 요청 흐름은 `docs/architecture.md`, AI 작업 체계는 `docs/ai-system/README.md`(소개), `guide.md`(사용 방법), `plan.md`(설계와 결정 기록)를 참고한다.
+전체 구조와 요청 흐름은 `docs/architecture.md`, AI 작업 체계는 `docs/ai-system/README.md`(소개), `guide.md`(사용 방법), `decisions.md`(설계 결정), `plan.md`(초기 설계안, 트랙 기준)를 참고한다.
 
 ## 모듈
 
