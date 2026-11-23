@@ -67,11 +67,16 @@ Claude Code에 작업을 위임하는 절차를 상황별로 정리했습니다.
 
 ## 문서 작성과 교정
 
-PR 본문, 이슈 본문, `docs/` 문서는 `CLAUDE.md`의 "문서 작성" 규칙을 따르며, PR을 만들기 직전에 `/doc-review`로 문장을 다듬습니다. AI가 PR을 생성할 때는 이 단계를 자동으로 거치고, 교정 기록이 없는 문서가 있으면 hook이 PR 생성을 막습니다.
+AI가 작성하는 PR 본문, 이슈 본문, `docs/` 문서, README, 작업 기록 같은 사람용 글은 `/doc-write`로 Gemini가 작성합니다. Claude가 바뀐 내용, 이유, 실행한 명령과 결과 수치, 경로, 링크를 담은 사실 초안을 만들고, Gemini가 `CLAUDE.md`의 "문서 작성" 규칙과 PR 템플릿 등의 양식에 맞춰 글을 씁니다.
+
+작성이 끝나면 `scripts/ai/doc-write.py` 스크립트가 결과물에 사실 초안에 없던 숫자, 백틱 안 내용, 링크, `#번호`가 새로 생기지 않았는지 검사합니다. 검사에 걸리면 이유를 붙여 한 번 다시 작성하게 하며, 다시 걸리면 결과물을 사용하지 않습니다. 이후 Claude는 결과물의 사실만 대조하고 문장은 직접 고치지 않습니다.
+
+사람이 직접 쓴 글은 `/doc-review`로 교정합니다. `/doc-write` 작성 기록이나 `/doc-review` 교정 기록이 없는 문서가 있으면 hook이 PR 생성을 막습니다. CI 환경에는 `agy`가 없어 Claude가 직접 글을 작성하고 "건너뜀"으로 기록합니다.
 
 ```text
-/doc-review                      # 브랜치에서 바뀐 문서
-/doc-review docs/ai-system/x.md  # 바뀐 문서 + 지정한 파일
+/doc-write PR 본문                  # 사실 초안으로 PR 본문 작성
+/doc-write docs/ai-system/x.md      # 기존 문서의 바뀐 부분 작성
+/doc-review docs/ai-system/x.md     # 사람이 쓴 문서 교정
 ```
 
 ## 주간 리포트
@@ -113,5 +118,6 @@ PR 본문, 이슈 본문, `docs/` 문서는 `CLAUDE.md`의 "문서 작성" 규�
 | `/infra-change #번호` | 인프라/배포 변경 | 변경 초안, 로컬 검증, 예상 plan 요약 → PR |
 | `/perf-check #번호` | 성능 확인, 개선 | 측정 계획 → 로컬 환경 기준선 비교 |
 | `/refactor-audit [서비스]` | 정기 점검 | 개선 후보 진단, 선택된 후보만 이슈 등록 |
-| `/doc-review [파일]` | 문서, PR 본문 작성 후 | Gemini 기반 문장 교정 |
+| `/doc-write <대상>` | AI가 문서, PR 본문을 쓸 때 | 사실 초안으로 Gemini가 글 작성, 사실 검사 |
+| `/doc-review [파일]` | 사람이 쓴 문서를 다듬을 때 | Gemini 기반 문장 교정 |
 | `/gemini-review [#번호]` | PR 직전, 열린 PR 리뷰 | Gemini 기반 코드 2차 리뷰 |
