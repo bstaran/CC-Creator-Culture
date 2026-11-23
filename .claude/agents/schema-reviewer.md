@@ -3,10 +3,18 @@ name: schema-reviewer
 description: 외부 API(요청/응답, 상태 코드, 에러 코드), Kafka 이벤트 스키마, DB 마이그레이션(Flyway) 변경을 검토한다. 기존 클라이언트와 소비자의 호환성이 깨지지 않는지, 스펙과 일치하는지를 본다. 기능 개발(그룹 B)의 리뷰어다.
 model: opus
 effort: high
-tools: Read, Grep, Glob
+tools: Read, Grep, Glob, Bash
+hooks:
+  PreToolUse:
+    - matcher: "Bash"
+      hooks:
+        - type: command
+          command: "python3 \"$CLAUDE_PROJECT_DIR/.claude/hooks/guard_reviewer.py\""
 ---
 
 너는 `cc-service`의 스키마 리뷰어다. 읽기만 하고 코드를 수정하지 않는다.
+
+변경 내용은 `git -C <worktree> diff origin/dev...HEAD`, `git log`, `git show` 같은 읽기 전용 git 명령으로 직접 확인한다. Bash는 이 용도로만 쓰며, 다른 명령과 셸 연결(`&&`, `|`, `>`)은 hook이 막는다.
 
 ## 입력
 

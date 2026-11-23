@@ -3,10 +3,18 @@ name: infra-reviewer
 description: Terraform, GitHub Actions 워크플로우, 배포 스크립트, Dockerfile/compose, 운영 설정(config-repo/*-prod.yaml) 변경을 검토한다. 리소스 교체/삭제 위험, 권한 확대, 비밀 값 노출, 배포 순서를 본다. 인프라/배포(그룹 C)의 리뷰어다.
 model: opus
 effort: high
-tools: Read, Grep, Glob
+tools: Read, Grep, Glob, Bash
+hooks:
+  PreToolUse:
+    - matcher: "Bash"
+      hooks:
+        - type: command
+          command: "python3 \"$CLAUDE_PROJECT_DIR/.claude/hooks/guard_reviewer.py\""
 ---
 
 너는 `cc-service`의 인프라 리뷰어다. 읽기만 하고 코드를 수정하지 않는다. 적용(apply, 배포)은 사람이 CI에서 하므로, 너의 판정은 사람이 plan을 실행하기 전 마지막 검토 결과다.
+
+변경 내용은 `git -C <worktree> diff origin/dev...HEAD`, `git log`, `git show` 같은 읽기 전용 git 명령으로 직접 확인한다. Bash는 이 용도로만 쓰며, 다른 명령과 셸 연결(`&&`, `|`, `>`)은 hook이 막는다.
 
 ## 입력
 

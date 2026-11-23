@@ -20,7 +20,7 @@ argument-hint: "#<이슈번호> [plan-check]"
    replace, destroy가 있으면 데이터 영향과 대책(`moved`, 스냅샷, 단계적 배포)을 함께 적는다. 이 표를 상태 파일 "기준"에 넣는다.
 4. **구현**: `implementer`에게 의도, 예상 plan 요약, 금지 사항(infra/CLAUDE.md)을 넘긴다.
 5. **검증(직접 실행)**: `scripts/ai/tf-check.sh`와 변경된 `.github/scripts/*`의 `_test`를 실행한다. 워크플로우를 변경했다면 actionlint도 실행한다. 결과 수치를 상태 파일에 적는다.
-6. **리뷰**: `infra-reviewer`에게 의도, 예상 plan 요약, diff 출력 내용(리뷰어는 git을 실행할 수 없다), 검증 결과를 넘긴다. 권한, 네트워크, 비밀 값과 관련되면 `/security-review`도 실행한다.
+6. **리뷰**: `infra-reviewer`에게 의도, 예상 plan 요약, worktree 경로와 비교 범위(리뷰어가 `git -C <worktree> diff`로 직접 읽는다), 검증 결과를 넘긴다. 권한, 네트워크, 비밀 값과 관련되면 `/security-review`도 실행한다.
 7. **PR**: 본문에 예상 plan 요약, 사람이 plan에서 확인할 항목(infra-reviewer 정리), 적용 순서와 롤백 방법을 넣는다. 라벨은 `type: infra`를 붙인다. PR을 열기 전에 `/doc-review`로 본문을 다듬는다.
 8. 사람에게 CI에서 plan을 실행해 결과를 PR 코멘트로 남겨 달라고 요청한다.
 
