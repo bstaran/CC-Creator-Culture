@@ -63,7 +63,7 @@ git worktree add --no-track .claude/worktrees/<이슈번호> -b <refactor|fix>/<
 
 ## 7. PR
 
-PR을 만들기 직전에 `/doc-review`를 한 번 실행해, 이번 브랜치에서 바뀐 문서 중 사람이 읽는 문서(상태 파일 포함, `.claude/`와 `CLAUDE.md` 제외)와 PR 본문 파일을 함께 다듬는다. 제안을 반영했으면 `--mark`로 기록하고 커밋한다. `agy`를 쓸 수 없으면 "건너뜀"으로 기록되며, 이 사실은 PR 참고사항에 적는다. 교정 기록이 없는 문서가 있으면 hook이 `gh pr create`를 막는다. PR 본문은 반드시 `--body-file`로 넘긴다.
+PR을 만들기 직전에 `/doc-write`로 사람이 읽는 글을 Gemini가 쓰게 한다. 오케스트레이터는 사실 초안(바뀐 것, 이유, 실행한 명령과 결과 수치, 반영하지 않은 리뷰 지적)을 만들어 PR 본문(`--template .github/pull_request_template.md`)과 상태 파일(`--target`)을 쓰게 하고, 결과물의 사실만 대조한다. 결과물은 커밋한다. `agy`를 쓸 수 없으면 직접 쓰고 `--mark-skipped`로 기록하며, 이 사실은 PR 참고사항에 적는다. 교정 기록이 없는 문서가 있으면 hook이 `gh pr create`를 막는다. PR 본문은 반드시 `--body-file`로 넘긴다.
 
 ```bash
 git push -u origin <브랜치>

@@ -17,7 +17,7 @@ python3 scripts/ai/code-review.py --out <스크래치>/review.json            # 
 python3 scripts/ai/code-review.py --pr <번호> --out <스크래치>/review.json # PR(임시 worktree에 head를 받아 리뷰)
 ```
 
-- 대상은 코드, 설정, SQL, 스크립트다. 문서(`*.md`), 동결 저장소, 이벤트 스냅샷, 바이너리는 빠진다. 문서는 `/doc-review`가 맡는다.
+- 대상은 코드, 설정, SQL, 스크립트다. 문서(`*.md`), 동결 저장소, 이벤트 스냅샷, 바이너리는 빠진다. 문서는 `/doc-write`, `/doc-review`가 맡는다.
 - 기본 모델은 `gemini-4-neon-high`다. 묶음(diff 600줄) 하나에 2~7분이 걸리므로 **백그라운드로 실행**하고 완료 알림을 기다린다. 빠른 확인만 필요하면 `--model gemini-4-neon-medium`(1분 안팎, 미묘한 지적은 놓친다)을 쓴다.
 - 종료 코드 3(`skipped`, `error`)이면 리뷰를 건너뛰고 그 사실만 보고한다. 이 단계 때문에 작업을 멈추지 않는다.
 - 스크립트가 위치가 틀린 지적은 버리고, diff 밖 위치는 본문 지적(`inline: false`)으로 돌린다. 버린 개수는 `filtered`에 있다.
