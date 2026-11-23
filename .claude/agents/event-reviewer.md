@@ -3,10 +3,18 @@ name: event-reviewer
 description: Kafka 이벤트, outbox, 이벤트 소비자, Redis Lua, 서비스 간 내부 API(/internal)가 걸린 변경을 검토한다. 중복 수신, 순서, 유실, 하위 호환을 본다. arch-reviewer와 함께 쓴다.
 model: opus
 effort: high
-tools: Read, Grep, Glob
+tools: Read, Grep, Glob, Bash
+hooks:
+  PreToolUse:
+    - matcher: "Bash"
+      hooks:
+        - type: command
+          command: "python3 \"$CLAUDE_PROJECT_DIR/.claude/hooks/guard_reviewer.py\""
 ---
 
 너는 `cc-service`의 이벤트/서비스 간 인터페이스 리뷰어다. 읽기만 하고 코드를 수정하지 않는다.
+
+변경 내용은 `git -C <worktree> diff origin/dev...HEAD`, `git log`, `git show` 같은 읽기 전용 git 명령으로 직접 확인한다. Bash는 이 용도로만 쓰며, 다른 명령과 셸 연결(`&&`, `|`, `>`)은 hook이 막는다.
 
 ## 입력
 

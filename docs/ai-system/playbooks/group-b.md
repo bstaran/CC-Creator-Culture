@@ -56,7 +56,7 @@ scripts/ai/stack-up.sh && scripts/ai/smoke-gateway.sh; scripts/ai/stack-down.sh 
 ## 5. 리뷰
 
 - 항상 `arch-reviewer`와 `schema-reviewer`에게 병렬로 리뷰를 맡긴다. 이벤트, outbox, Lua, `/internal`이 관련되면 `event-reviewer`도 포함한다.
-- 리뷰어에게 스펙(이슈 본문)을 함께 넘긴다.
+- 리뷰어에게 스펙(이슈 본문), worktree 경로, 비교 범위(`origin/dev...HEAD`)를 넘긴다. 리뷰어는 변경 내용을 git으로 직접 읽는다.
 - 수정 요청은 최대 2회이며, 그 뒤에는 멈추고 보고한다(그룹 A와 같다).
 
 ## 6. PR

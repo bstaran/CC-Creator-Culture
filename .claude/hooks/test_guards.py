@@ -136,6 +136,30 @@ FILE_CASES = [
 ]
 
 
+# 리뷰어 에이전트(guard_reviewer.py): 읽기 전용 git만 허용
+REVIEWER_CASES = [
+    ("git diff origin/dev...HEAD", 0),
+    ("git -C .claude/worktrees/7 diff origin/dev...HEAD -- apps/order-service", 0),
+    ("git --no-pager log --oneline -5", 0),
+    ("git show HEAD~1:apps/order-service/build.gradle", 0),
+    ("git status --short", 0),
+    ("git blame -L 10,20 CLAUDE.md", 0),
+    ("git diff --output=/tmp/x origin/dev", 2),
+    ("git diff --ext-diff", 2),
+    ("git -c diff.external=sh diff", 2),
+    ("git checkout dev", 2),
+    ("git commit -m x", 2),
+    ("git push origin x", 2),
+    ("git diff > /tmp/x", 2),
+    ("git diff | sh", 2),
+    ("cd .claude/worktrees/7 && git diff", 2),
+    ("git diff $(rm -rf x)", 2),
+    ("rm -rf apps", 2),
+    ("./gradlew test", 2),
+    ("git grep -O vim foo", 2),
+]
+
+
 def run(script: str, payload: dict, skip_doc_check: bool = True) -> int:
     env = dict(os.environ)
     if skip_doc_check:
@@ -146,8 +170,25 @@ def run(script: str, payload: dict, skip_doc_check: bool = True) -> int:
                           capture_output=True, text=True, cwd=ROOT, env=env).returncode
 
 
+def cwd_push_cases() -> list:
+    """`cd <다른 체크아웃> && git push`는 그 체크아웃의 브랜치로 판정해야 한다(worktree에서 push하는 경우)."""
+    import atexit
+    import shutil
+    import tempfile
+    cases = []
+    for branch, expect in (("main", 2), ("feature/x", 0)):
+        repo = tempfile.mkdtemp(prefix="guard-cwd-")
+        atexit.register(shutil.rmtree, repo, True)
+        subprocess.run(["git", "init", "-q", "-b", branch, repo], check=True)
+        subprocess.run(["git", "-C", repo, "-c", "user.name=t", "-c", "user.email=t@t", "commit", "-q",
+                        "--allow-empty", "-m", "init"], check=True)   # 커밋이 있어야 브랜치 이름을 읽는다
+        cases.append((f"cd {repo} && git push", expect))
+    return cases
+
+
 def main() -> int:
     fails = 0
+    BASH_CASES.extend(cwd_push_cases())
     for cmd, expect in BASH_CASES:
         rc = run("guard_bash.py", {"tool_name": "Bash", "tool_input": {"command": cmd}})
         if rc != expect:
@@ -163,7 +204,12 @@ def main() -> int:
         if rc != expect:
             fails += 1
             print(f"BAD rc={rc} expect={expect} | {tool} {path}")
-    total = len(BASH_CASES) + len(DOC_CHECK_CASES) + len(FILE_CASES)
+    for cmd, expect in REVIEWER_CASES:
+        rc = run("guard_reviewer.py", {"tool_name": "Bash", "tool_input": {"command": cmd}})
+        if rc != expect:
+            fails += 1
+            print(f"BAD rc={rc} expect={expect} | reviewer {cmd!r}")
+    total = len(BASH_CASES) + len(DOC_CHECK_CASES) + len(FILE_CASES) + len(REVIEWER_CASES)
     print(f"{total - fails}/{total} 통과")
     return 1 if fails else 0
 

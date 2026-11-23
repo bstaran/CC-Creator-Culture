@@ -13,7 +13,7 @@ import sys
 
 PROTECTED_BRANCHES = {"dev", "main"}
 DOC_REVIEW_SCRIPT = os.path.join(os.path.dirname(os.path.abspath(__file__)), "..", "..", "scripts", "ai", "doc-review.py")
-CWD = {"path": os.getcwd()}   # 같은 명령 안의 `cd <경로>`를 따라간다(gh pr create 위치 판단용)
+CWD = {"path": os.getcwd()}   # 같은 명령 안의 `cd <경로>`를 따라간다(gh pr create, git push 위치 판단용)
 WRAPPERS = {"sudo", "time", "command", "nohup", "env", "exec", "xargs"}
 TERRAFORM_ALLOWED = {"fmt", "init", "validate", "test", "version", "providers", "-version", "--version", "-help", "--help"}
 TEXT_ONLY_COMMANDS = {"echo", "printf"}
@@ -28,7 +28,7 @@ def current_branch() -> str:
     try:
         return subprocess.run(
             ["git", "rev-parse", "--abbrev-ref", "HEAD"],
-            capture_output=True, text=True, timeout=5,
+            capture_output=True, text=True, timeout=5, cwd=CWD["path"],
         ).stdout.strip()
     except Exception:
         return ""
@@ -38,7 +38,7 @@ def upstream_branch() -> str:
     try:
         ref = subprocess.run(
             ["git", "rev-parse", "--abbrev-ref", "--symbolic-full-name", "@{u}"],
-            capture_output=True, text=True, timeout=5,
+            capture_output=True, text=True, timeout=5, cwd=CWD["path"],
         ).stdout.strip()
     except Exception:
         return ""
