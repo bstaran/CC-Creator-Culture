@@ -98,11 +98,11 @@ def option_value(argv: list[str], *names: str) -> str | None:
 
 
 def check_pr_doc_review(argv: list[str]) -> None:
-    """PR을 만들기 전에 바뀐 문서와 PR 본문이 /doc-review를 거쳤는지 확인한다."""
+    """PR을 만들기 전에 바뀐 문서와 PR 본문이 /doc-write(작성)나 /doc-review(교정)를 거쳤는지 확인한다."""
     if os.environ.get("CC_SKIP_DOC_REVIEW_CHECK") == "1" or not os.path.exists(DOC_REVIEW_SCRIPT):
         return
     if option_value(argv, "--body", "-b") is not None or "--fill" in argv or "-f" in argv:
-        block("PR 본문은 `--body-file <파일>`로 넘긴다. 본문 파일도 `/doc-review`로 교정한 뒤 PR을 만든다.")
+        block("PR 본문은 `--body-file <파일>`로 넘긴다. 본문 파일은 `/doc-write`로 쓴 뒤 PR을 만든다.")
     body_file = option_value(argv, "--body-file", "-F")
     cmd = [sys.executable, DOC_REVIEW_SCRIPT, "--check-pr",
            "--base", option_value(argv, "--base", "-B") or "dev",
@@ -114,7 +114,7 @@ def check_pr_doc_review(argv: list[str]) -> None:
     except Exception:
         return
     if result.returncode == 1:
-        block("문서 교정(/doc-review)을 거치지 않은 문서가 있다.\n" + result.stdout.strip())
+        block("/doc-write(작성)나 /doc-review(교정)를 거치지 않은 문서가 있다.\n" + result.stdout.strip())
 
 
 APPROVED_LABEL = "spec: approved"

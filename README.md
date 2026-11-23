@@ -1,6 +1,14 @@
 # CC (Creator Culture)
 
-크리에이터가 상품을 등록·판매하고, 카테고리/해시태그 기반 리더보드로 트렌드를 노출하는 크리에이터 커머스 플랫폼입니다. Spring Boot 기반 MSA(멀티모듈)로 구성되어 있습니다.
+크리에이터가 상품을 등록하고 판매하며, 카테고리/해시태그 기반 리더보드로 트렌드를 노출하는 크리에이터 커머스 플랫폼입니다. Spring Boot 기반 MSA(멀티모듈)로 구성되어 있습니다.
+
+## AI 개발 하네스
+
+Claude Code를 이 프로젝트의 구현, 버그 수정, 리팩토링에 쓰기 위해 만든 작업 환경(하네스)입니다. 구현 전에 완료 기준을 테스트로 먼저 고정하고, 검증과 리뷰를 거쳐 PR을 여는 흐름으로 동작합니다. 머지, 스펙 승인, 배포처럼 되돌리기 어려운 결정은 수동 승인으로 분리했습니다.
+
+- **구성**: 프로젝트 규칙(`CLAUDE.md`), 작업 유형별 스킬 12개, 역할과 모델을 분리한 에이전트 7개, 파괴적 명령을 실행 직전에 차단하는 hook, 이종 모델(Gemini) 교차 리뷰, 사실 초안을 받아 Gemini가 공유 문서를 쓰는 문서 작성 단계
+- **검증**: 리팩토링 1건에서 특성 테스트로 동작을 먼저 고정하고 테스트 786개 기준으로 동작 변경 없이 처리했습니다. Gemini 교차 리뷰는 Claude 리뷰어가 놓친 실제 버그 2건을 찾았습니다.
+- **문서**: 소개와 검증 결과는 [docs/ai-system/README.md](docs/ai-system/README.md), 설계 결정은 [docs/ai-system/decisions.md](docs/ai-system/decisions.md)에 있습니다.
 
 ## 기술 스택
 
@@ -19,8 +27,6 @@
 
 
 ## 팀 구성 및 도메인 담당자
-
-> TODO: 실제 팀원 이름/역할로 채워주세요.
 
 | 이름 | 담당 도메인 |
 |---|---|
@@ -109,7 +115,7 @@ cc-service
 ## CI/CD
 
 - **CI**: GitHub Actions가 서비스별로 분리되어 있어(`ci-user-service`, `ci-product-service`, `ci-order-service`, `ci-gateway` 등) 변경된 모듈에 관련된 CI만 실행됩니다.
-- **개발 배포(Deploy Development)**: `dev` 브랜치 또는 릴리스 후보를 대상으로 수동 트리거(workflow_dispatch)로 배포하며, 변경된 서비스만 이미지/설정을 다시 빌드·롤링합니다.
+- **개발 배포(Deploy Development)**: `dev` 브랜치 또는 릴리스 후보를 대상으로 수동 트리거(workflow_dispatch)로 배포하며, 변경된 서비스만 이미지/설정을 다시 빌드하고 롤링합니다.
 - **AWS 배포(AWS Deploy)**: Terraform(ECS) 기반으로 plan/deploy/start/stop/destroy-runtime을 수동으로 선택해 실행합니다.
 
 ## 부하테스트

@@ -8,7 +8,7 @@ worktree, 상태 파일, 검증, 리뷰 횟수, PR 규칙은 [group-a.md](group-
 ```mermaid
 flowchart TD
   T["/triage: 기능 개발"] --> S["/spec: 스펙 초안"]
-  S --> D["/doc-review: 스펙 문장 교정"]
+  S --> D["/doc-write: 스펙 본문 작성(Gemini)"]
   D --> A{"사람: 스펙 승인<br/>spec: approved"}
   A -->|"수정 요청"| S
   A -->|"승인"| F["/feature: 요구사항 테스트 고정"]
@@ -23,7 +23,7 @@ flowchart TD
 - 결과물은 `spec` 이슈(`.github/ISSUE_TEMPLATE/spec.md` 구조)다. 기존 이슈가 있으면 본문을 스펙 구조로 갱신하는 안을 코멘트로 제안한다.
 - **완료 조건**은 테스트로 확인할 수 있는 문장으로 쓴다("~하면 ~한다"). 모호한 요구(예: "빠르게", "적절히")는 수치나 예시로 바꾸거나 질문으로 남긴다.
 - API, 이벤트, DB 변경은 표로 구체적으로 적는다. 기존 계약을 깨는 변경이 필요하면 그 사실과 대안(필드 추가, 버전 분리)을 함께 적는다.
-- 스펙 초안의 문장은 `/doc-review`로 다듬는다.
+- 스펙 본문은 `/doc-write`로 쓴다(양식: `.github/ISSUE_TEMPLATE/spec.md`). 오케스트레이터는 요구사항, 완료 조건, API/이벤트/DB 변경을 사실 초안으로 정리한다.
 - **AI는 승인하지 않는다.** `spec: approved` 라벨은 사람이 붙인다.
 
 ## 2. 기준 고정(`/feature` 시작)
@@ -62,5 +62,5 @@ scripts/ai/stack-up.sh && scripts/ai/smoke-gateway.sh; scripts/ai/stack-down.sh 
 ## 6. PR
 
 - 제목은 `feat(<scope>): <요약>`으로 하고, 본문에 AC 대응표(AC, 테스트, 결과)를 넣는다.
-- PR 생성 전에 `/doc-review`로 PR 본문과 바뀐 문서를 다듬는다.
+- PR 본문과 바뀐 문서는 PR 생성 전에 `/doc-write`로 쓴다.
 - 배포 시 확인사항(마이그레이션 순서, 이벤트 생산자/소비자 배포 순서)을 반드시 채운다.

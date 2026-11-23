@@ -5,7 +5,7 @@
 결과는 JSON으로 출력하고, 반영 여부는 호출한 쪽(Claude의 /doc-review)이 판단한다.
 
 비용을 줄이는 방식:
-    - 대상: 사람이 읽는 문서만(`.claude/`, `CLAUDE.md`, 모델 프롬프트는 제외). 파일을 직접 지정하면 그 파일을 본다.
+    - 대상: 공유 문서만(`.claude/`, `CLAUDE.md`, 모델 프롬프트는 제외). 파일을 직접 지정하면 그 파일을 본다.
     - 범위: 바뀐 줄과 앞뒤 몇 줄만 보낸다. 기준은 마지막으로 교정한 내용, 없으면 기준 브랜치(origin/dev)의 내용이다.
             새 파일과 기준이 없는 글(PR 본문 등)은 전체를 보낸다. `--full`이면 항상 전체를 보낸다.
     - 호출: 여러 문서의 조각을 묶어(BATCH_LINES 줄 단위) 한 번에 보내고, 묶음끼리는 동시에 호출한다.
@@ -22,6 +22,7 @@
 교정 기록(PR 생성 전 hook이 확인한다):
     교정을 마친 문서는 내용 해시로 기록하고 그 내용을 보관한다(.git/ai-doc-review.json, .git/ai-doc-review/, 커밋되지 않음, worktree 공유).
     교정이 끝나면 자동으로 "reviewed", agy를 못 쓰거나 실패하면 "skipped"로 기록한다.
+    doc-write.py로 Gemini가 쓴 글은 "written"으로 기록되며, 교정 기록과 같이 인정한다.
     python3 scripts/ai/doc-review.py --mark <파일 ...>      # 제안을 반영한 뒤, 반영한 내용으로 다시 기록
     python3 scripts/ai/doc-review.py --check-pr [--base dev] [--head <브랜치>] [--body-file <PR 본문>]
 
@@ -96,7 +97,7 @@ def record(entries: list[tuple[str, bytes, str, str]]) -> None:
         for name, content, status, note in entries:
             digest = hashlib.sha256(content).hexdigest()
             state[digest] = {"path": name, "status": status, "note": note, "at": time.strftime("%Y-%m-%dT%H:%M:%S")}
-            if status == "reviewed":
+            if status in ("reviewed", "written"):
                 with open(os.path.join(snapshot_dir(), digest), "wb") as fh:
                     fh.write(content)
         tmp = path + ".tmp"
@@ -106,10 +107,10 @@ def record(entries: list[tuple[str, bytes, str, str]]) -> None:
 
 
 def last_reviewed(name: str, state: dict) -> str | None:
-    """같은 이름으로 마지막에 교정(또는 반영 후 기록)한 내용."""
+    """같은 이름으로 마지막에 교정(또는 반영 후 기록)하거나 doc-write.py로 쓴 내용."""
     best = None
     for digest, entry in state.items():
-        if entry.get("path") == name and entry.get("status") == "reviewed":
+        if entry.get("path") == name and entry.get("status") in ("reviewed", "written"):
             if best is None or entry["at"] > best[1]:
                 best = (digest, entry["at"])
     if best:
@@ -181,7 +182,7 @@ def check_pr(base: str, head: str, body_file: str | None) -> int:
         print("교정 기록이 없는 문서(커밋된 내용 기준):")
         for m in missing:
             print(f"  - {m}")
-        print("`/doc-review`로 교정하고, 제안을 반영했다면 `python3 scripts/ai/doc-review.py --mark <파일>`로 기록한 뒤 커밋한다.")
+        print("AI가 쓰는 글은 `/doc-write`로 쓰고, 사람이 쓴 글은 `/doc-review`로 교정한 뒤 커밋한다.")
         return 1
     print(f"교정 확인 통과({len(changed)}개 문서{', PR 본문' if body_file else ''})")
     return 0
