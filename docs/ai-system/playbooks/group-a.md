@@ -63,7 +63,7 @@ git worktree add --no-track .claude/worktrees/<이슈번호> -b <refactor|fix>/<
 
 ## 7. PR
 
-PR을 만들기 직전에 `/doc-write`로 사람이 읽는 문서 작성을 Gemini에 맡긴다. 오케스트레이터는 변경 내용, 이유, 실행한 명령과 결과 수치, 반영하지 않은 리뷰 지적을 담은 사실 초안을 만들어 PR 본문(`--template .github/pull_request_template.md`)과 상태 파일(`--target`)을 작성하게 한다. 이어서 결과물의 사실관계만 대조한 뒤 커밋한다. `agy`를 사용할 수 없으면 직접 작성하고 `--mark-skipped`로 기록하며, 이 사실을 PR 참고사항에 적는다. 교정 기록이 없는 문서가 있으면 hook이 `gh pr create`를 막고, PR 본문은 반드시 `--body-file`로 넘긴다.
+PR을 만들기 직전에 `/doc-write`로 공유 문서 작성을 Gemini에 맡긴다. 오케스트레이터는 변경 내용, 이유, 실행한 명령과 결과 수치, 반영하지 않은 리뷰 지적을 담은 사실 초안을 만들어 PR 본문(`--template .github/pull_request_template.md`)과 상태 파일(`--target`)을 작성하게 한다. 이어서 결과물의 사실관계만 대조한 뒤 커밋한다. `agy`를 사용할 수 없으면 직접 작성하고 `--mark-skipped`로 기록하며, 이 사실을 PR 참고사항에 적는다. 교정 기록이 없는 문서가 있으면 hook이 `gh pr create`를 막고, PR 본문은 반드시 `--body-file`로 넘긴다.
 
 ```bash
 git push -u origin <브랜치>

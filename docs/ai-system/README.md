@@ -45,7 +45,7 @@ flowchart LR
 | 작업 절차(스킬 12개) | 분류, 버그 수정, 리팩토링, 기능 개발, 인프라 변경, 성능 측정, 문서 작성과 교정 절차를 명령 하나로 실행합니다 | `.claude/skills/` |
 | 역할별 에이전트(7개) | 탐색은 Haiku, 테스트 작성과 구현은 Sonnet, 리뷰는 Opus가 맡습니다. 리뷰어는 파일 읽기와 읽기 전용 git 명령만 쓸 수 있습니다 | `.claude/agents/` |
 | 안전장치(hook) | 머지, 공유 브랜치 push, 시크릿 파일 접근, Terraform 실행 같은 위험한 명령을 실행 직전에 막고, 작업을 끝낼 때 컴파일을 확인합니다. 차단 규칙은 회귀 테스트로 고정했습니다 | `.claude/hooks/` |
-| 이종 모델 교차 검증 | Gemini가 코드를 2차 리뷰하고, 사람이 읽는 글(PR 본문, 문서)은 Claude가 만든 사실 초안으로 Gemini가 씁니다. 스크립트가 결과물에 초안에 없던 사실이 생겼는지 검사합니다 | `scripts/ai/code-review.py`, `doc-write.py`, `doc-review.py` |
+| 이종 모델 교차 검증 | Gemini가 코드를 2차 리뷰하고, 공유 문서(PR 본문, 문서)는 Claude가 만든 사실 초안으로 Gemini가 씁니다. 스크립트가 결과물에 초안에 없던 사실이 생겼는지 검사합니다 | `scripts/ai/code-review.py`, `doc-write.py`, `doc-review.py` |
 | 구조 규칙 테스트 | 계층 의존 규칙을 테스트로 검사합니다. 기존 위반 34개 클래스는 동결하고 새 위반만 실패로 처리합니다 | 서비스별 `LayerArchitectureTest` |
 | 작업 상태 파일 | 완료 기준, 진행 로그, 리뷰 결과를 파일에 남겨 세션이 끊겨도 이어서 작업할 수 있습니다 | `docs/ai-system/tasks/` |
 | GitHub 자동화 | 주간 지표와 개선 후보를 리포트 이슈로 만들고, 이슈에서 `@claude`를 호출하면 분류부터 시작합니다 | `.github/workflows/ai-weekly.yml`, `claude.yml` |

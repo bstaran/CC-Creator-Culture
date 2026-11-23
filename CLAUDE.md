@@ -60,9 +60,9 @@ scripts/ai/stack-up.sh && scripts/ai/smoke-gateway.sh; scripts/ai/stack-down.sh 
 
 ## 문서 작성
 
-PR 본문, 이슈 본문, `README.md`, `docs/`(소개, 설계 결정, 가이드, 지표, 작업 기록)처럼 사람이 읽는 글에 적용한다. 독자는 이 작업의 세부 맥락은 모르지만 MSA, CI/CD, hook, 시크릿, 오케스트레이터 같은 기본 개발과 인프라 용어는 아는 백엔드/인프라 엔지니어(팀원, 면접관)다. AI가 쓰는 이런 글은 `/doc-write`로 Gemini가 쓴다. Claude는 사실 초안을 만들고 결과물의 사실만 대조하며, 문장은 직접 고치지 않는다. 사람이 직접 쓴 글은 `/doc-review`로 교정한다.
+PR 본문, 이슈 본문, `README.md`, `docs/`(소개, 설계 결정, 가이드, 지표, 작업 기록) 같은 공유 문서에 적용한다. 독자는 이 작업의 세부 맥락은 모르지만 MSA, CI/CD, hook, 시크릿, 오케스트레이터 같은 기본 개발과 인프라 용어는 아는 백엔드/인프라 엔지니어(팀원, 면접관)다. AI가 쓰는 공유 문서는 `/doc-write`로 Gemini가 쓴다. Claude는 사실 초안을 만들고 결과물의 사실만 대조하며, 문장은 직접 고치지 않는다. 사람이 직접 쓴 글은 `/doc-review`로 교정한다.
 
-- 문체: 사람이 읽는 대외/공유 문서와 PR, 이슈 본문은 담백한 실무 합쇼체(`~합니다`)로 통일한다. AI 전용 지침(`CLAUDE.md`, `.claude/`, `playbooks/`)은 기존 평서체(`~한다`)를 유지한다.
+- 문체: 공유 문서(`README.md`, `docs/`, PR/이슈 본문)는 담백한 실무 합쇼체(`~합니다`)로 통일한다. AI 전용 지침(`CLAUDE.md`, `.claude/`, `playbooks/`)은 기존 평서체(`~한다`)를 유지한다.
 - 첫머리에 무엇이 바뀌고 왜 필요한지를 두세 문장으로 쓴다. 세부 내용은 그 뒤에 둔다.
 - 제목은 명사형으로 쓴다(예: "배경", "작업 흐름"). 질문형이나 문장형 제목은 쓰지 않는다.
 - 독자가 판단하는 데 필요한 내용만 쓴다. 명령 옵션, 내부 함수 이름, 리뷰 지적 번호 같은 구현 세부는 꼭 필요할 때만 쓰고, 나머지는 파일 경로로 대신한다.
@@ -108,7 +108,7 @@ PR 본문, 이슈 본문, `README.md`, `docs/`(소개, 설계 결정, 가이드,
 
 - `guard_bash.py`: terraform plan/apply/destroy/state 등, 워크플로우 수동 실행, 클라우드 CLI 쓰기 명령(`aws`, `oci`는 조회만 허용), 이미지 push, `origin` 외 push, `dev`/`main` push, force push, `.env` 접근, `-x test`, PR 머지와 승인, `spec: approved` 라벨 부착을 차단한다. push는 force 변형(`+refspec`, `-uf`)과 `--mirror`, `--all`, 원격 브랜치 삭제도 막고, `git remote` 변경과 명령 실행이 가능한 git 설정(`alias.` 등)도 막는다.
 - `guard_files.py`: 비밀 값 파일(`.env`, `*.tfvars`, `backend.hcl`, `*.tfstate`) 읽기와 수정, 기존 Flyway 마이그레이션 수정을 차단한다.
-- `guard_bash.py`(PR 생성): `gh pr create`를 실행할 때 브랜치에서 바뀐 사람이 읽는 문서(`.claude/`, `CLAUDE.md` 제외)와 PR 본문(`--body-file`)에 `/doc-write` 작성 기록이나 `/doc-review` 교정 기록이 있는지 확인하고, 없으면 차단한다.
+- `guard_bash.py`(PR 생성): `gh pr create`를 실행할 때 브랜치에서 바뀐 공유 문서(`.claude/`, `CLAUDE.md` 제외)와 PR 본문(`--body-file`)에 `/doc-write` 작성 기록이나 `/doc-review` 교정 기록이 있는지 확인하고, 없으면 차단한다.
 - `verify_compile.py`(Stop): 커밋되지 않은 Java/Gradle 변경이 있으면 해당 모듈의 포맷 검사(`spotlessCheck`)와 컴파일을 실행하고, 실패하면 작업을 끝내지 못하게 한다. 같은 내용은 다시 실행하지 않는다. `CC_SKIP_VERIFY=1`로 끌 수 있다.
 
 hook을 고치면 `python3 .claude/hooks/test_guards.py`(차단/허용 회귀 테스트)를 실행한다. 문서 교정 스크립트를 고치면 `python3 scripts/ai/test_doc_review.py`, 주간 지표 스크립트를 고치면 `python3 scripts/ai/test_weekly_metrics.py`, 코드 리뷰 스크립트를 고치면 `python3 scripts/ai/test_code_review.py`를 실행한다. hook이 차단하면 우회하지 말고 사유를 사용자에게 보고한다.

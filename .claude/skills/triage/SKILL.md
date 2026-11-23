@@ -128,4 +128,4 @@ gh issue create --repo <repo> --title "fix(order): ..." --label "type: bug" --la
 - 이슈가 등록된 리팩토링은 `/refactor-task #번호`, 버그 수정은 `/bugfix #번호`로 진행한다(절차: `docs/ai-system/playbooks/group-a.md`).
 - 기능 개발은 `/spec`(스펙 초안 작성, 사람 승인 요청) 후 `spec: approved`가 붙으면 `/feature #번호`로 진행한다(절차: `docs/ai-system/playbooks/group-b.md`).
 - 인프라/배포는 `/infra-change #번호`, 성능은 `/perf-check #번호`로 진행한다(절차: `docs/ai-system/playbooks/group-c.md`).
-- 사람이 읽는 문서와 PR 본문은 `/doc-write`로 쓴다.
+- 공유 문서와 PR 본문은 `/doc-write`로 쓴다.

@@ -1,6 +1,6 @@
 ---
 name: doc-write
-description: 사람이 읽는 글(PR 본문, 이슈 본문, docs, README, 작업 기록)을 다른 모델(Antigravity agy, Gemini)이 쓰게 한다. Claude는 사실 초안을 만들고, 결과물의 사실만 대조하며 문장은 고치지 않는다. 쓸 대상(PR 본문, 이슈 본문, 문서 경로)을 받는다.
+description: 공유 문서(PR 본문, 이슈 본문, docs, README, 작업 기록)를 다른 모델(Antigravity agy, Gemini)이 쓰게 한다. Claude는 사실 초안을 만들고, 결과물의 사실만 대조하며 문장은 고치지 않는다. 쓸 대상(PR 본문, 이슈 본문, 문서 경로)을 받는다.
 argument-hint: "<PR 본문 | 이슈 본문 | 문서 경로 ...>"
 ---
 
@@ -8,7 +8,7 @@ argument-hint: "<PR 본문 | 이슈 본문 | 문서 경로 ...>"
 
 대상: $ARGUMENTS
 
-사람이 읽는 글의 문장은 Gemini가 쓴다. Claude는 **사실을 정하고 검증하는 쪽**만 맡는다. 실행 결과와 수치는 Claude가 직접 얻은 값이라 Gemini가 다시 알아낼 수 없고, 글을 쓰면서 숫자나 경로를 바꿀 위험이 있기 때문이다.
+공유 문서의 문장은 Gemini가 쓴다. Claude는 **사실을 정하고 검증하는 쪽**만 맡는다. 실행 결과와 수치는 Claude가 직접 얻은 값이라 Gemini가 다시 알아낼 수 없고, 글을 쓰면서 숫자나 경로를 바꿀 위험이 있기 때문이다.
 
 대상이 아닌 것: AI가 읽는 지침(`CLAUDE.md`, `.claude/`, `docs/ai-system/playbooks/`, `scripts/ai/prompts/`)은 Claude가 직접 쓴다. 사람이 직접 쓴 글을 다듬을 때는 `/doc-review`를 쓴다.
 

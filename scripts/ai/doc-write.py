@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""사람이 읽는 글을 다른 모델(Antigravity CLI `agy`, Gemini)이 쓰게 한다.
+"""공유 문서를 다른 모델(Antigravity CLI `agy`, Gemini)이 쓰게 한다.
 
 역할 분담:
     - Claude: 사실 초안(brief)을 만든다. 바뀐 것, 이유, 근거(실행한 명령과 결과 수치, 경로, 링크)를 다듬지 않은 목록으로 적는다.
